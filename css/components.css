@@ -1,0 +1,17 @@
+/* tweet card animations */
+.tweet-card {
+    @apply bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow;
+}
+
+/* character counter states */
+.char-counter-normal {
+    @apply text-sm font-medium text-gray-400;
+}
+
+.char-counter-warning {
+    @apply text-sm font-medium text-yellow-400;
+}
+
+.char-counter-over {
+    @apply text-sm font-medium text-red-400 font-bold;
+}

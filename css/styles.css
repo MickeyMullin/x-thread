@@ -1,0 +1,42 @@
+/* Tailwind config */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* custom font family */
+.font-twitter {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* smooth transitions for tweet cards */
+[data-tweet-id] {
+    transition: all 0.3s ease-out;
+}
+
+[data-tweet-id]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* button animations */
+button {
+    transition: all 0.2s ease-out;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* text area focus animations */
+textarea:focus {
+    transform: scale(1.02);
+    transition: transform 0.2s ease-out;
+}
+
+/* character counter transitions */
+#charCounter {
+    transition: all 0.2s ease-out;
+}
+
+/* component-specific styles */
+@import './components.css';

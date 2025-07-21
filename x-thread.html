@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Thread Composer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'twitter': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 font-twitter h-screen overflow-hidden text-white">
+    <div class="h-full flex">
+        <!-- Left Side - Composer -->
+        <div class="w-1/2 p-6 bg-gray-800 border-r border-gray-700 overflow-y-auto">
+            <div class="max-w-2xl mx-auto">
+                <h1 class="text-2xl font-bold text-white mb-6">Thread Composer</h1>
+
+                <!-- Main Text Area -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        Compose your thread
+                    </label>
+                    <textarea
+                        id="mainText"
+                        class="w-full h-64 p-4 bg-gray-700 border border-gray-600 text-white rounded-lg resize-y focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base leading-relaxed placeholder-gray-400 min-h-32"
+                        placeholder="Start writing your thread here... When you go over 280 characters, it'll automatically split into multiple tweets."
+                    ></textarea>
+                </div>
+
+                <!-- Character Counter -->
+                <div class="mb-4 flex justify-between items-center">
+                    <div id="charCounter" class="text-sm font-medium text-gray-400">
+                        0 characters
+                    </div>
+                    <div class="flex gap-2">
+                        <button
+                            id="autoSplit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                            Auto Split
+                        </button>
+                        <button
+                            id="clearAll"
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                        >
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Manual Split Controls -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Manual Controls</h3>
+                    <div class="flex gap-2 flex-wrap">
+                        <button
+                            id="addTweet"
+                            class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                        >
+                            + Add Tweet
+                        </button>
+                        <button
+                            id="insertSeparator"
+                            class="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 transition-colors"
+                        >
+                            Insert ---
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tips -->
+                <div class="bg-blue-900 border border-blue-700 rounded-lg p-4">
+                    <h4 class="font-medium text-blue-200 mb-2">💡 Tips</h4>
+                    <ul class="text-sm text-blue-300 space-y-1">
+                        <li>• Type <code class="bg-blue-800 px-1 rounded">---</code> on its own line to manually split tweets</li>
+                        <li>• Auto Split intelligently breaks at sentence boundaries first</li>
+                        <li>• Use Insert --- button to add separators at cursor position</li>
+                        <li>• Edit individual tweets directly in the preview</li>
+                        <li>• Click copy button to grab individual tweets</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Thread Preview -->
+        <div class="w-1/2 p-6 bg-gray-900">
+            <div class="max-w-2xl mx-auto h-full flex flex-col">
+                <h2 class="text-2xl font-bold text-white mb-6">Thread Preview</h2>
+
+                <div class="flex-1 overflow-hidden">
+                    <div id="threadPreview" class="space-y-4 max-h-full overflow-y-auto pr-2">
+                        <!-- Tweet cards will be inserted here -->
+                    </div>
+
+                    <div id="emptyState" class="text-center py-12 text-gray-400">
+                        <div class="text-4xl mb-4">🧵</div>
+                        <p class="text-lg">Start typing to see your thread preview</p>
+                        <p class="text-sm mt-2">Use <code class="bg-gray-700 px-1 rounded">---</code> to manually split tweets</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TwitterThreadComposer {
+            constructor() {
+                this.tweets = []
+                this.maxLength = 280
+
+                this.mainText = document.getElementById('mainText')
+                this.charCounter = document.getElementById('charCounter')
+                this.threadPreview = document.getElementById('threadPreview')
+                this.emptyState = document.getElementById('emptyState')
+
+                this.setupEventListeners()
+                this.updateDisplay()
+            }
+
+            setupEventListeners() {
+                this.mainText.addEventListener('input', () => this.handleTextInput())
+
+                document.getElementById('autoSplit').addEventListener('click', () => this.autoSplit())
+                document.getElementById('clearAll').addEventListener('click', () => this.clearAll())
+                document.getElementById('addTweet').addEventListener('click', () => this.addEmptyTweet())
+                document.getElementById('insertSeparator').addEventListener('click', () => this.insertSeparator())
+            }
+
+            handleTextInput() {
+                const text = this.mainText.value
+
+                if (text.length === 0) {
+                    this.tweets = []
+                } else {
+                    // First, split by manual separators (---)
+                    const manualSections = this.parseManualSeparators(text)
+                    this.tweets = []
+
+                    // Then auto-split each section if needed
+                    manualSections.forEach(section => {
+                        if (section.trim().length > 0) {
+                            if (section.length <= this.maxLength) {
+                                this.tweets.push({ text: section.trim(), id: Date.now() + Math.random() })
+                            } else {
+                                this.tweets.push(...this.smartSplit(section.trim()))
+                            }
+                        }
+                    })
+
+                    // If no manual separators and single section over limit, auto-split
+                    if (manualSections.length === 1 && text.length > this.maxLength) {
+                        this.tweets = this.smartSplit(text.trim())
+                    }
+                }
+
+                this.updateDisplay()
+            }
+
+            parseManualSeparators(text) {
+                // Split by lines that contain only --- (with optional whitespace)
+                const lines = text.split('\n')
+                const sections = []
+                let currentSection = []
+
+                for (const line of lines) {
+                    if (line.trim() === '---') {
+                        // Found a separator, save current section and start new one
+                        if (currentSection.length > 0) {
+                            sections.push(currentSection.join('\n'))
+                            currentSection = []
+                        }
+                    } else {
+                        currentSection.push(line)
+                    }
+                }
+
+                // Add the last section
+                if (currentSection.length > 0) {
+                    sections.push(currentSection.join('\n'))
+                }
+
+                return sections.length > 0 ? sections : [text]
+            }
+
+            smartSplit(text) {
+                const tweets = []
+                let remaining = text
+                let id = Date.now()
+
+                while (remaining.length > this.maxLength) {
+                    let splitPoint = this.maxLength
+
+                    // Try to split at sentence boundary first (prioritize this heavily)
+                    const sentenceEnd = remaining.lastIndexOf('.', this.maxLength)
+                    const questionEnd = remaining.lastIndexOf('?', this.maxLength)
+                    const exclamEnd = remaining.lastIndexOf('!', this.maxLength)
+
+                    const sentenceBoundary = Math.max(sentenceEnd, questionEnd, exclamEnd)
+
+                    // Use sentence boundary if it's reasonably close (60% of max length)
+                    if (sentenceBoundary > this.maxLength * 0.6) {
+                        splitPoint = sentenceBoundary + 1
+                    } else {
+                        // Try paragraph breaks
+                        const paragraphBreak = remaining.lastIndexOf('\n\n', this.maxLength)
+                        if (paragraphBreak > this.maxLength * 0.5) {
+                            splitPoint = paragraphBreak + 2
+                        } else {
+                            // Try single line breaks
+                            const lineBreak = remaining.lastIndexOf('\n', this.maxLength)
+                            if (lineBreak > this.maxLength * 0.6) {
+                                splitPoint = lineBreak + 1
+                            } else {
+                                // Finally, split at word boundary
+                                const lastSpace = remaining.lastIndexOf(' ', this.maxLength)
+                                if (lastSpace > this.maxLength * 0.6) {
+                                    splitPoint = lastSpace
+                                }
+                            }
+                        }
+                    }
+
+                    tweets.push({
+                        text: remaining.substring(0, splitPoint).trim(),
+                        id: id++
+                    })
+
+                    remaining = remaining.substring(splitPoint).trim()
+                }
+
+                if (remaining.length > 0) {
+                    tweets.push({
+                        text: remaining,
+                        id: id++
+                    })
+                }
+
+                return tweets
+            }
+
+            insertSeparator() {
+                const cursorPos = this.mainText.selectionStart
+                const text = this.mainText.value
+                const beforeCursor = text.substring(0, cursorPos)
+                const afterCursor = text.substring(cursorPos)
+
+                // Add separator with proper line breaks
+                const separator = beforeCursor.endsWith('\n') ? '---\n' : '\n---\n'
+                const newText = beforeCursor + separator + afterCursor
+
+                this.mainText.value = newText
+                this.mainText.focus()
+
+                // Position cursor after the separator
+                const newCursorPos = cursorPos + separator.length
+                this.mainText.setSelectionRange(newCursorPos, newCursorPos)
+
+                this.handleTextInput()
+            }
+
+            autoSplit() {
+                const text = this.mainText.value
+                if (text.trim()) {
+                    this.tweets = this.smartSplit(text.trim())
+                    this.updateDisplay()
+                }
+            }
+
+            addEmptyTweet() {
+                this.tweets.push({
+                    text: '',
+                    id: Date.now()
+                })
+                this.updateDisplay()
+            }
+
+            clearAll() {
+                this.mainText.value = ''
+                this.tweets = []
+                this.updateDisplay()
+            }
+
+            deleteTweet(id) {
+                this.tweets = this.tweets.filter(tweet => tweet.id !== id)
+                this.rebuildMainText()
+                this.updateDisplay()
+            }
+
+            updateTweetText(id, newText) {
+                const tweet = this.tweets.find(t => t.id === id)
+                if (tweet) {
+                    tweet.text = newText
+                    this.rebuildMainText()
+
+                    // Update the display text as well
+                    const tweetCard = document.querySelector(`[data-tweet-id="${id}"]`)
+                    if (tweetCard) {
+                        const displayDiv = tweetCard.querySelector('.tweet-display')
+                        if (displayDiv) {
+                            displayDiv.innerHTML = this.escapeHtml(newText)
+                        }
+                    }
+
+                    this.updateDisplay()
+                }
+            }
+
+            rebuildMainText() {
+                this.mainText.value = this.tweets.map(t => t.text).join(' ')
+            }
+
+            moveTweet(fromIndex, toIndex) {
+                const tweet = this.tweets.splice(fromIndex, 1)[0]
+                this.tweets.splice(toIndex, 0, tweet)
+                this.rebuildMainText()
+                this.updateDisplay()
+            }
+
+            updateDisplay() {
+                this.updateCharCounter()
+                this.updateThreadPreview()
+            }
+
+            updateCharCounter() {
+                const totalChars = this.mainText.value.length
+                const tweetCount = this.tweets.length
+
+                if (totalChars === 0) {
+                    this.charCounter.textContent = '0 characters'
+                    this.charCounter.className = 'text-sm font-medium text-gray-400'
+                } else if (tweetCount === 1 && totalChars <= this.maxLength) {
+                    const remaining = this.maxLength - totalChars
+                    this.charCounter.textContent = `${remaining} characters remaining`
+                    this.charCounter.className = remaining > 20 ?
+                        'text-sm font-medium text-green-400' :
+                        'text-sm font-medium text-yellow-400'
+                } else {
+                    this.charCounter.textContent = `${totalChars} characters → ${tweetCount} tweets`
+                    this.charCounter.className = 'text-sm font-medium text-blue-400'
+                }
+            }
+
+            updateThreadPreview() {
+                if (this.tweets.length === 0) {
+                    this.threadPreview.style.display = 'none'
+                    this.emptyState.style.display = 'block'
+                    return
+                }
+
+                this.threadPreview.style.display = 'block'
+                this.emptyState.style.display = 'none'
+
+                this.threadPreview.innerHTML = this.tweets.map((tweet, index) =>
+                    this.createTweetCard(tweet, index)
+                ).join('')
+
+                this.setupTweetCardListeners()
+            }
+
+            createTweetCard(tweet, index) {
+                const charCount = tweet.text.length
+                const isOverLimit = charCount > this.maxLength
+                const remaining = this.maxLength - charCount
+
+                return `
+                    <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow" 
+                         data-tweet-id="${tweet.id}" data-index="${index}">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                    ${index + 1}
+                                </div>
+                                <span class="text-sm text-gray-400">Tweet ${index + 1}/${this.tweets.length}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-mono ${
+                                    isOverLimit ? 'text-red-400 font-bold' :
+                                    remaining < 20 ? 'text-yellow-400' : 'text-gray-400'
+                                }">
+                                    ${isOverLimit ? `+${Math.abs(remaining)}` : remaining}
+                                </span>
+                                <button class="copy-btn text-blue-400 hover:text-blue-300 text-sm font-medium">
+                                    Copy
+                                </button>
+                                <button class="edit-btn text-green-400 hover:text-green-300 text-sm font-medium">
+                                    Edit
+                                </button>
+                                ${this.tweets.length > 1 ? `
+                                    <button class="delete-btn text-red-400 hover:text-red-300 text-sm font-medium">
+                                        Delete
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="tweet-content ${isOverLimit ? 'border-red-600 bg-red-900/20' : ''}">
+                            <div class="tweet-display p-3 bg-gray-700 rounded-lg text-white text-base leading-relaxed whitespace-pre-wrap break-words">
+                                ${this.escapeHtml(tweet.text)}
+                            </div>
+                            <textarea 
+                                class="tweet-edit w-full p-3 bg-gray-700 border border-gray-600 text-white rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base leading-relaxed placeholder-gray-400 hidden"
+                                rows="3"
+                                data-tweet-id="${tweet.id}"
+                            >${tweet.text}</textarea>
+                        </div>
+                        
+                        ${isOverLimit ? `
+                            <div class="mt-2 text-sm text-red-400 font-medium">
+                                ⚠️ Over limit by ${Math.abs(remaining)} characters
+                            </div>
+                        ` : ''}
+                    </div>
+                `
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div')
+                div.textContent = text
+                return div.innerHTML
+            }
+
+            setupTweetCardListeners() {
+                // Copy buttons
+                document.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const tweetId = parseInt(e.target.closest('[data-tweet-id]').dataset.tweetId)
+                        const tweet = this.tweets.find(t => t.id === tweetId)
+
+                        navigator.clipboard.writeText(tweet.text).then(() => {
+                            btn.textContent = 'Copied!'
+                            btn.className = 'copy-btn text-green-400 font-medium text-sm'
+                            setTimeout(() => {
+                                btn.textContent = 'Copy'
+                                btn.className = 'copy-btn text-blue-400 hover:text-blue-300 text-sm font-medium'
+                            }, 1000)
+                        })
+                    })
+                })
+
+                // Edit buttons
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const tweetCard = e.target.closest('[data-tweet-id]')
+                        const tweetDisplay = tweetCard.querySelector('.tweet-display')
+                        const tweetEdit = tweetCard.querySelector('.tweet-edit')
+
+                        if (tweetDisplay.classList.contains('hidden')) {
+                            // Save and show display
+                            const newText = tweetEdit.value
+                            const tweetId = parseInt(tweetCard.dataset.tweetId)
+                            this.updateTweetText(tweetId, newText)
+
+                            tweetDisplay.classList.remove('hidden')
+                            tweetEdit.classList.add('hidden')
+                            btn.textContent = 'Edit'
+                            btn.className = 'edit-btn text-green-400 hover:text-green-300 text-sm font-medium'
+                        } else {
+                            // Show edit mode
+                            tweetDisplay.classList.add('hidden')
+                            tweetEdit.classList.remove('hidden')
+                            tweetEdit.focus()
+                            btn.textContent = 'Save'
+                            btn.className = 'edit-btn text-blue-400 hover:text-blue-300 text-sm font-medium'
+                        }
+                    })
+                })
+
+                // Delete buttons
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const tweetId = parseInt(e.target.closest('[data-tweet-id]').dataset.tweetId)
+                        this.deleteTweet(tweetId)
+                    })
+                })
+
+                // Auto-save on textarea blur
+                document.querySelectorAll('textarea[data-tweet-id]').forEach(textarea => {
+                    textarea.addEventListener('blur', (e) => {
+                        const tweetId = parseInt(e.target.dataset.tweetId)
+                        this.updateTweetText(tweetId, e.target.value)
+                    })
+                })
+            }
+        }
+
+        // Initialize the composer when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TwitterThreadComposer()
+        })
+    </script>
+</body>
+</html>

@@ -1,140 +1,111 @@
 // /js/utils.js
 
-// text processing utilities factory
-const createTextUtils = () => {
-    // private helper for validating text input
-    const isValidText = (text) => {
-        return typeof text === 'string' && text.length > 0
+// animation utilities factory
+const createAnimationUtils = () => {
+  // private helper for easing functions
+  const easingFunctions = {
+      linear: t => t,
+      easeInQuad: t => t * t,
+      easeOutQuad: t => t * (2 - t),
+      easeInOutQuad: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+      easeInCubic: t => t * t * t,
+      easeOutCubic: t => (--t) * t * t + 1,
+      easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
+  }
+
+  // animate a numeric value
+  const animateValue = (from, to, duration, callback, easing = 'easeOutQuad') => {
+    const startTime = performance.now()
+    const easeFn = easingFunctions[easing] || easingFunctions.easeOutQuad
+
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const easedProgress = easeFn(progress)
+      const currentValue = from + (to - from) * easedProgress
+
+      callback(currentValue, progress)
+
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      }
     }
 
-    // private helper for normalizing whitespace
-    const normalizeWhitespace = (text) => {
-        return text.replace(/\s+/g, ' ').trim()
-    }
+    requestAnimationFrame(animate)
+  }
 
-    // escape HTML for safe display
-    const escapeHtml = (text) => {
-        if (!isValidText(text)) return ''
+  // fade element in/out
+  const fadeElement = (element, direction = 'in', duration = 300) => {
+    return new Promise((resolve) => {
+      if (!element) {
+        resolve(false)
+        return
+      }
 
-        const div = document.createElement('div')
-        div.textContent = text
-        return div.innerHTML
-    }
+      const startOpacity = direction === 'in' ? 0 : 1
+      const endOpacity = direction === 'in' ? 1 : 0
 
-    // parse manual separators (---)
-    const parseManualSeparators = (text) => {
-        if (!isValidText(text)) return [text || '']
+      element.style.opacity = startOpacity
 
-        const lines = text.split('\n')
-        const sections = []
-        let currentSection = []
+      if (direction === 'in') {
+        element.style.display = 'block'
+      }
 
-        for (const line of lines) {
-            if (line.trim() === '---') {
-                if (currentSection.length > 0) {
-                    sections.push(currentSection.join('\n'))
-                    currentSection = []
-                }
-            } else {
-                currentSection.push(line)
-            }
+      animateValue(startOpacity, endOpacity, duration, (value) => {
+        element.style.opacity = value
+      })
+
+      setTimeout(() => {
+        if (direction === 'out') {
+          element.style.display = 'none'
         }
+        resolve(true)
+      }, duration)
+    })
+  }
 
-        if (currentSection.length > 0) {
-            sections.push(currentSection.join('\n'))
+  // slide element in/out
+  const slideElement = (element, direction = 'down', duration = 300) => {
+    return new Promise((resolve) => {
+      if (!element) {
+        resolve(false)
+        return
+      }
+
+      const isVertical = direction === 'up' || direction === 'down'
+      const property = isVertical ? 'maxHeight' : 'maxWidth'
+      const dimension = isVertical ? element.scrollHeight : element.scrollWidth
+
+      if (direction === 'down' || direction === 'right') {
+        element.style[property] = '0px'
+        element.style.display = 'block'
+
+        animateValue(0, dimension, duration, (value) => {
+          element.style[property] = `${value}px`
+        })
+      } else {
+        animateValue(dimension, 0, duration, (value) => {
+          element.style[property] = `${value}px`
+        })
+      }
+
+      setTimeout(() => {
+        if (direction === 'up' || direction === 'left') {
+          element.style.display = 'none'
         }
+        element.style[property] = ''
+        resolve(true)
+      }, duration)
+    })
+  }
 
-        return sections.length > 0 ? sections : [text]
-    }
-
-    // smart text splitting with various strategies
-    const findOptimalSplitPoint = (text, maxLength) => {
-        if (text.length <= maxLength) return text.length
-
-        let splitPoint = maxLength
-
-        // strategy 1: sentence boundaries (highest priority)
-        const sentenceEnd = text.lastIndexOf('.', maxLength)
-        const questionEnd = text.lastIndexOf('?', maxLength)
-        const exclamEnd = text.lastIndexOf('!', maxLength)
-        const sentenceBoundary = Math.max(sentenceEnd, questionEnd, exclamEnd)
-
-        if (sentenceBoundary > maxLength * 0.6) {
-            return sentenceBoundary + 1
-        }
-
-        // strategy 2: paragraph breaks
-        const paragraphBreak = text.lastIndexOf('\n\n', maxLength)
-        if (paragraphBreak > maxLength * 0.5) {
-            return paragraphBreak + 2
-        }
-
-        // strategy 3: line breaks
-        const lineBreak = text.lastIndexOf('\n', maxLength)
-        if (lineBreak > maxLength * 0.6) {
-            return lineBreak + 1
-        }
-
-        // strategy 4: word boundaries (fallback)
-        const lastSpace = text.lastIndexOf(' ', maxLength)
-        if (lastSpace > maxLength * 0.6) {
-            return lastSpace
-        }
-
-        // last resort: hard cut at maxLength
-        return maxLength
-    }
-
-    // count words in text
-    const countWords = (text) => {
-        if (!isValidText(text)) return 0
-        return normalizeWhitespace(text).split(' ').length
-    }
-
-    // count sentences in text
-    const countSentences = (text) => {
-        if (!isValidText(text)) return 0
-        return text.split(/[.!?]+/).filter(s => s.trim().length > 0).length
-    }
-
-    // generate text statistics
-    const getTextStats = (text) => {
-        return {
-            characters: text.length,
-            words: countWords(text),
-            sentences: countSentences(text),
-            lines: text.split('\n').length
-        }
-    }
-
-    // truncate text with ellipsis
-    const truncateText = (text, maxLength, ellipsis = '...') => {
-        if (!isValidText(text) || text.length <= maxLength) return text
-
-        const truncated = text.substring(0, maxLength - ellipsis.length)
-        const lastSpace = truncated.lastIndexOf(' ')
-
-        // try to break at word boundary
-        if (lastSpace > maxLength * 0.7) {
-            return truncated.substring(0, lastSpace) + ellipsis
-        }
-
-        return truncated + ellipsis
-    }
-
-    // public API
-    return {
-        escapeHtml,
-        parseManualSeparators,
-        findOptimalSplitPoint,
-        countWords,
-        countSentences,
-        getTextStats,
-        truncateText,
-        // utility methods
-        isValidText,
-        normalizeWhitespace
-    }
+  // public API
+  return {
+    animateValue,
+    fadeElement,
+    slideElement,
+    easingFunctions
+  }
 }
 
 // DOM manipulation utilities factory
@@ -405,119 +376,155 @@ const createStorageUtils = () => {
     }
 }
 
-// animation utilities factory
-const createAnimationUtils = () => {
-  // private helper for easing functions
-  const easingFunctions = {
-      linear: t => t,
-      easeInQuad: t => t * t,
-      easeOutQuad: t => t * (2 - t),
-      easeInOutQuad: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-      easeInCubic: t => t * t * t,
-      easeOutCubic: t => (--t) * t * t + 1,
-      easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
-  }
-
-  // animate a numeric value
-  const animateValue = (from, to, duration, callback, easing = 'easeOutQuad') => {
-    const startTime = performance.now()
-    const easeFn = easingFunctions[easing] || easingFunctions.easeOutQuad
-
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      const easedProgress = easeFn(progress)
-      const currentValue = from + (to - from) * easedProgress
-
-      callback(currentValue, progress)
-
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      }
+// text processing utilities factory
+const createTextUtils = () => {
+    // count sentences in text
+    const countSentences = (text) => {
+        if (!isValidText(text)) return 0
+        return text.split(/[.!?]+/).filter(s => s.trim().length > 0).length
     }
 
-    requestAnimationFrame(animate)
-  }
+    // count words in text
+    const countWords = (text) => {
+        if (!isValidText(text)) return 0
+        return normalizeWhitespace(text).split(' ').length
+    }
 
-  // fade element in/out
-  const fadeElement = (element, direction = 'in', duration = 300) => {
-    return new Promise((resolve) => {
-      if (!element) {
-        resolve(false)
-        return
-      }
+    // escape HTML for safe display
+    const escapeHtml = (text) => {
+        if (!isValidText(text)) return ''
 
-      const startOpacity = direction === 'in' ? 0 : 1
-      const endOpacity = direction === 'in' ? 1 : 0
+        const div = document.createElement('div')
+        div.textContent = text
+        return div.innerHTML
+    }
 
-      element.style.opacity = startOpacity
+    // smart text splitting with various strategies
+    const findOptimalSplitPoint = (text, maxLength) => {
+        if (text.length <= maxLength) return text.length
 
-      if (direction === 'in') {
-        element.style.display = 'block'
-      }
+        let splitPoint = maxLength
 
-      animateValue(startOpacity, endOpacity, duration, (value) => {
-        element.style.opacity = value
-      })
+        // strategy 1: sentence boundaries (highest priority)
+        const sentenceEnd = text.lastIndexOf('.', maxLength)
+        const questionEnd = text.lastIndexOf('?', maxLength)
+        const exclamEnd = text.lastIndexOf('!', maxLength)
+        const sentenceBoundary = Math.max(sentenceEnd, questionEnd, exclamEnd)
 
-      setTimeout(() => {
-        if (direction === 'out') {
-          element.style.display = 'none'
+        if (sentenceBoundary > maxLength * 0.6) {
+            return sentenceBoundary + 1
         }
-        resolve(true)
-      }, duration)
-    })
-  }
 
-  // slide element in/out
-  const slideElement = (element, direction = 'down', duration = 300) => {
-    return new Promise((resolve) => {
-      if (!element) {
-        resolve(false)
-        return
-      }
-
-      const isVertical = direction === 'up' || direction === 'down'
-      const property = isVertical ? 'maxHeight' : 'maxWidth'
-      const dimension = isVertical ? element.scrollHeight : element.scrollWidth
-
-      if (direction === 'down' || direction === 'right') {
-        element.style[property] = '0px'
-        element.style.display = 'block'
-
-        animateValue(0, dimension, duration, (value) => {
-          element.style[property] = `${value}px`
-        })
-      } else {
-        animateValue(dimension, 0, duration, (value) => {
-          element.style[property] = `${value}px`
-        })
-      }
-
-      setTimeout(() => {
-        if (direction === 'up' || direction === 'left') {
-          element.style.display = 'none'
+        // strategy 2: paragraph breaks
+        const paragraphBreak = text.lastIndexOf('\n\n', maxLength)
+        if (paragraphBreak > maxLength * 0.5) {
+            return paragraphBreak + 2
         }
-        element.style[property] = ''
-        resolve(true)
-      }, duration)
-    })
-  }
 
-  // public API
-  return {
-    animateValue,
-    fadeElement,
-    slideElement,
-    easingFunctions
-  }
+        // strategy 3: line breaks
+        const lineBreak = text.lastIndexOf('\n', maxLength)
+        if (lineBreak > maxLength * 0.6) {
+            return lineBreak + 1
+        }
+
+        // strategy 4: word boundaries (fallback)
+        const lastSpace = text.lastIndexOf(' ', maxLength)
+        if (lastSpace > maxLength * 0.6) {
+            return lastSpace
+        }
+
+        // last resort: hard cut at maxLength
+        return maxLength
+    }
+
+    // convert newlines to br tags
+    const formatTextForDisplay = (text) => {
+      if (!isValidText(text)) return ''
+      return escapeHtml(text).replace(/\n/g, '<br>')
+    }
+
+    // generate text statistics
+    const getTextStats = (text) => {
+        return {
+            characters: text.length,
+            words: countWords(text),
+            sentences: countSentences(text),
+            lines: text.split('\n').length
+        }
+    }
+
+    // private helper for validating text input
+    const isValidText = (text) => {
+        return typeof text === 'string' && text.length > 0
+    }
+
+    // private helper for normalizing whitespace
+    const normalizeWhitespace = (text) => {
+        return text.replace(/\s+/g, ' ').trim()
+    }
+
+    // parse manual separators (---)
+    const parseManualSeparators = (text) => {
+        if (!isValidText(text)) return [text || '']
+
+        const lines = text.split('\n')
+        const sections = []
+        let currentSection = []
+
+        for (const line of lines) {
+            if (line.trim() === '---') {
+                if (currentSection.length > 0) {
+                    sections.push(currentSection.join('\n'))
+                    currentSection = []
+                }
+            } else {
+                currentSection.push(line)
+            }
+        }
+
+        if (currentSection.length > 0) {
+            sections.push(currentSection.join('\n'))
+        }
+
+        return sections.length > 0 ? sections : [text]
+    }
+
+    // truncate text with ellipsis
+    const truncateText = (text, maxLength, ellipsis = '...') => {
+        if (!isValidText(text) || text.length <= maxLength) return text
+
+        const truncated = text.substring(0, maxLength - ellipsis.length)
+        const lastSpace = truncated.lastIndexOf(' ')
+
+        // try to break at word boundary
+        if (lastSpace > maxLength * 0.7) {
+            return truncated.substring(0, lastSpace) + ellipsis
+        }
+
+        return truncated + ellipsis
+    }
+
+    // public API
+    return {
+        countSentences,
+        countWords,
+        escapeHtml,
+        findOptimalSplitPoint,
+        formatTextForDisplay,
+        getTextStats,
+        parseManualSeparators,
+        truncateText,
+        // utility methods
+        isValidText,
+        normalizeWhitespace,
+    }
 }
 
 // initialize utilities when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   // create utility instances
-  window.textUtils = createTextUtils()
+  window.animationUtils = createAnimationUtils()
   window.domUtils = createDOMUtils()
   window.storageUtils = createStorageUtils()
-  window.animationUtils = createAnimationUtils()
+  window.textUtils = createTextUtils()
 })

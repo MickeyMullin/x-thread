@@ -5,7 +5,12 @@
 
 /* custom font family */
 .font-twitter {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.tweet-display {
+  text-indent: 0;
+  word-wrap: break-word;
 }
 
 /* smooth transitions for tweet cards */

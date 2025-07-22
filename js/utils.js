@@ -2,17 +2,6 @@
 
 // animation utilities factory
 const createAnimationUtils = () => {
-  // private helper for easing functions
-  const easingFunctions = {
-      linear: t => t,
-      easeInQuad: t => t * t,
-      easeOutQuad: t => t * (2 - t),
-      easeInOutQuad: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-      easeInCubic: t => t * t * t,
-      easeOutCubic: t => (--t) * t * t + 1,
-      easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
-  }
-
   // animate a numeric value
   const animateValue = (from, to, duration, callback, easing = 'easeOutQuad') => {
     const startTime = performance.now()
@@ -32,6 +21,17 @@ const createAnimationUtils = () => {
     }
 
     requestAnimationFrame(animate)
+  }
+
+  // helper for easing functions
+  const easingFunctions = {
+      linear: t => t,
+      easeInQuad: t => t * t,
+      easeOutQuad: t => t * (2 - t),
+      easeInOutQuad: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+      easeInCubic: t => t * t * t,
+      easeOutCubic: t => (--t) * t * t + 1,
+      easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
   }
 
   // fade element in/out
@@ -102,9 +102,9 @@ const createAnimationUtils = () => {
   // public API
   return {
     animateValue,
+    easingFunctions,
     fadeElement,
     slideElement,
-    easingFunctions
   }
 }
 
@@ -113,6 +113,35 @@ const createDOMUtils = () => {
     // private helper for element validation
     const isValidElement = (element) => {
         return element && element.nodeType === Node.ELEMENT_NODE
+    }
+
+    // batch add event listeners
+    const addEventListeners = (element, eventMap) => {
+        if (!isValidElement(element)) return []
+
+        const cleanupFunctions = []
+
+        Object.entries(eventMap).forEach(([event, handler]) => {
+            const cleanup = addEventListenerWithCleanup(element, event, handler)
+            if (cleanup) cleanupFunctions.push(cleanup)
+        })
+
+        // return function to cleanup all listeners
+        return () => {
+            cleanupFunctions.forEach(cleanup => cleanup())
+        }
+    }
+
+    // add event listener with cleanup
+    const addEventListenerWithCleanup = (element, event, handler, options = {}) => {
+        if (!isValidElement(element)) return null
+
+        element.addEventListener(event, handler, options)
+
+        // return cleanup function
+        return () => {
+            element.removeEventListener(event, handler, options)
+        }
     }
 
     // copy text to clipboard with fallback
@@ -130,107 +159,6 @@ const createDOMUtils = () => {
         } catch (error) {
             console.warn('Clipboard copy failed:', error)
             return fallbackCopyToClipboard(text)
-        }
-    }
-
-    // fallback clipboard method
-    const fallbackCopyToClipboard = (text) => {
-        const textArea = document.createElement('textarea')
-        textArea.value = text
-        textArea.style.position = 'fixed'
-        textArea.style.left = '-999999px'
-        textArea.style.top = '-999999px'
-
-        document.body.appendChild(textArea)
-        textArea.focus()
-        textArea.select()
-
-        try {
-            const successful = document.execCommand('copy')
-            document.body.removeChild(textArea)
-            return successful
-        } catch (error) {
-            document.body.removeChild(textArea)
-            return false
-        }
-    }
-
-    // show temporary feedback on element
-    const showTemporaryFeedback = (element, message, duration = 1000) => {
-        if (!isValidElement(element)) return false
-
-        const originalText = element.textContent
-        const originalClass = element.className
-
-        element.textContent = message
-        element.className = 'copy-btn text-green-400 font-medium text-sm'
-
-        setTimeout(() => {
-            element.textContent = originalText
-            element.className = originalClass
-        }, duration)
-
-        return true
-    }
-
-    // smooth scroll to element
-    const scrollToElement = (element, options = {}) => {
-        if (!isValidElement(element)) return false
-
-        const defaultOptions = {
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-        }
-
-        element.scrollIntoView({ ...defaultOptions, ...options })
-        return true
-    }
-
-    // toggle element visibility with animation
-    const toggleVisibility = (element, force = null) => {
-        if (!isValidElement(element)) return false
-
-        const isHidden = element.classList.contains('hidden')
-        const shouldShow = force !== null ? force : isHidden
-
-        if (shouldShow) {
-            element.classList.remove('hidden')
-            element.style.display = 'block'
-        } else {
-            element.classList.add('hidden')
-            element.style.display = 'none'
-        }
-
-        return shouldShow
-    }
-
-    // add event listener with cleanup
-    const addEventListenerWithCleanup = (element, event, handler, options = {}) => {
-        if (!isValidElement(element)) return null
-
-        element.addEventListener(event, handler, options)
-
-        // return cleanup function
-        return () => {
-            element.removeEventListener(event, handler, options)
-        }
-    }
-
-    // batch add event listeners
-    const addEventListeners = (element, eventMap) => {
-        if (!isValidElement(element)) return []
-
-        const cleanupFunctions = []
-
-        Object.entries(eventMap).forEach(([event, handler]) => {
-            const cleanup = addEventListenerWithCleanup(element, event, handler)
-            if (cleanup) cleanupFunctions.push(cleanup)
-        })
-
-        // return function to cleanup all listeners
-        return () => {
-            cleanupFunctions.forEach(cleanup => cleanup())
         }
     }
 
@@ -261,6 +189,28 @@ const createDOMUtils = () => {
         return element
     }
 
+    // fallback clipboard method
+    const fallbackCopyToClipboard = (text) => {
+        const textArea = document.createElement('textarea')
+        textArea.value = text
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        textArea.style.top = '-999999px'
+
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+
+        try {
+            const successful = document.execCommand('copy')
+            document.body.removeChild(textArea)
+            return successful
+        } catch (error) {
+            document.body.removeChild(textArea)
+            return false
+        }
+    }
+
     // find elements by various selectors
     const findElements = (selector, context = document) => {
         try {
@@ -269,6 +219,56 @@ const createDOMUtils = () => {
             console.warn('Invalid selector:', selector)
             return []
         }
+    }
+
+    // smooth scroll to element
+    const scrollToElement = (element, options = {}) => {
+        if (!isValidElement(element)) return false
+
+        const defaultOptions = {
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+        }
+
+        element.scrollIntoView({ ...defaultOptions, ...options })
+        return true
+    }
+
+    // show temporary feedback on element
+    const showTemporaryFeedback = (element, message, duration = 1000) => {
+        if (!isValidElement(element)) return false
+
+        const originalText = element.textContent
+        const originalClass = element.className
+
+        element.textContent = message
+        element.className = 'copy-btn text-green-400 font-medium text-sm'
+
+        const timeoutId = setTimeout(() => {
+            element.textContent = originalText
+            element.className = originalClass
+        }, duration)
+
+        return timeoutId // return to allow cancellation
+    }
+
+    // toggle element visibility with animation
+    const toggleVisibility = (element, force = null) => {
+        if (!isValidElement(element)) return false
+
+        const isHidden = element.classList.contains('hidden')
+        const shouldShow = force !== null ? force : isHidden
+
+        if (shouldShow) {
+            element.classList.remove('hidden')
+            element.style.display = 'block'
+        } else {
+            element.classList.add('hidden')
+            element.style.display = 'none'
+        }
+
+        return shouldShow
     }
 
     // public API
@@ -283,96 +283,6 @@ const createDOMUtils = () => {
         findElements,
         // utility methods
         isValidElement
-    }
-}
-
-// storage utilities factory (in-memory only for Claude.ai compatibility)
-const createStorageUtils = () => {
-    // private in-memory storage
-    let memoryStorage = new Map()
-
-    // store data in memory
-    const setItem = (key, value) => {
-        try {
-            const serialized = JSON.stringify(value)
-            memoryStorage.set(key, serialized)
-            return true
-        } catch (error) {
-            console.warn('Failed to store item:', error)
-            return false
-        }
-    }
-
-    // retrieve data from memory
-    const getItem = (key, defaultValue = null) => {
-        try {
-            const serialized = memoryStorage.get(key)
-            return serialized ? JSON.parse(serialized) : defaultValue
-        } catch (error) {
-            console.warn('Failed to retrieve item:', error)
-            return defaultValue
-        }
-    }
-
-    // remove item from memory
-    const removeItem = (key) => {
-        return memoryStorage.delete(key)
-    }
-
-    // clear all stored data
-    const clear = () => {
-        memoryStorage.clear()
-        return true
-    }
-
-    // get all keys
-    const getKeys = () => {
-        return Array.from(memoryStorage.keys())
-    }
-
-    // check if key exists
-    const hasItem = (key) => {
-        return memoryStorage.has(key)
-    }
-
-    // get storage size (number of items)
-    const getSize = () => {
-        return memoryStorage.size
-    }
-
-    // export data for external storage
-    const exportData = () => {
-        const data = {}
-        memoryStorage.forEach((value, key) => {
-            data[key] = JSON.parse(value)
-        })
-        return data
-    }
-
-    // import data from external source
-    const importData = (data) => {
-        try {
-            Object.entries(data).forEach(([key, value]) => {
-                setItem(key, value)
-            })
-            return true
-        } catch (error) {
-            console.warn('Failed to import data:', error)
-            return false
-        }
-    }
-
-    // public API
-    return {
-        setItem,
-        getItem,
-        removeItem,
-        clear,
-        getKeys,
-        hasItem,
-        getSize,
-        exportData,
-        importData
     }
 }
 
@@ -525,6 +435,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // create utility instances
   window.animationUtils = createAnimationUtils()
   window.domUtils = createDOMUtils()
-  window.storageUtils = createStorageUtils()
   window.textUtils = createTextUtils()
 })

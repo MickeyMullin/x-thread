@@ -26,6 +26,12 @@
             placeholder="Start writing your thread here... When you go over 280 characters, it'll automatically split into multiple tweets."></textarea>
         </div>
 
+        <!-- suppress edit-betwixt-copy warning -->
+        <div class="mt-2 flex items-center gap-2 text-sm text-gray-400 hidden">
+          <input type="checkbox" id="suppressConfirm" class="rounded text-blue-500">
+          <label for="suppressConfirm">Don't ask to reset copy state on edit</label>
+        </div>
+
         <!-- character counter -->
         <div class="mb-4 flex justify-between items-center">
           <div id="charCounter" class="text-sm font-medium text-gray-400">
@@ -43,23 +49,23 @@
           </div>
         </div>
 
-        <!-- manual split controls -->
+        <!-- options and manual split controls -->
         <div class="mb-6">
-          <h3 class="text-lg font-semibold text-white mb-3">Manual Controls</h3>
+          <h3 class="text-lg font-semibold text-white mb-3">Options and Manual Controls</h3>
           <div class="flex gap-2 flex-wrap">
             <button id="addTweet"
-              class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
+              class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors hidden">
               + Add Tweet
             </button>
             <button id="insertSeparator"
               class="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 transition-colors">
               Insert ---
             </button>
-            <label class="flex items-center gap-2 text-sm text-gray-300">
-              <input type="checkbox" id="allowOverLimit" class="rounded">
-              Allow over-limit tweets (X Premium)
-              <span class="cursor-help" title="X Premium users can post Tweets up to 25,000 characters">(?)</span>
-            </label>
+          </div>
+          <!-- thread indicators checkbox -->
+          <div class="mt-2 flex items-center gap-2 text-sm text-gray-400">
+            <input type="checkbox" id="threadIndicators" class="rounded text-blue-500">
+            <label for="threadIndicators">Include thread indicators</label>
           </div>
         </div>
 
@@ -86,6 +92,12 @@
             <input type="checkbox" id="animationToggle" class="rounded">
               Enable animations
           </label>
+
+          <!-- thread copy -->
+          <div class="flex items-center gap-2">
+            <button id="copyNext" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md font-medium text-sm">Copy Next</button>
+            <button id="resetCopy" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded-md font-medium text-sm">Reset Copy</button>
+          </div>
         </div>
 
         <div class="flex-1 overflow-hidden">

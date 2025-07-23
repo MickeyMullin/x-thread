@@ -221,6 +221,15 @@ const createDOMUtils = () => {
     }
   }
 
+  // helper to restore element to original state
+  const restoreElementState = (element, originalState) => {
+    if (!isValidElement(element) || !originalState) return
+
+    element.textContent = originalState.text
+    element.className = originalState.className
+    element.style.width = originalState.styleWidth
+  }
+
   // smooth scroll to element
   const scrollToElement = (element, options = {}) => {
     if (!isValidElement(element)) return false
@@ -235,22 +244,34 @@ const createDOMUtils = () => {
     return true
   }
 
-  // show temporary feedback on element
+  // show temporary feedback on element with cancellation support
   const showTemporaryFeedback = (element, message, duration = 1000) => {
     if (!isValidElement(element)) return false
 
-    const originalText = element.textContent
-    const originalClass = element.className
+    const originalState = {
+      text: element.textContent,
+      className: element.className,
+      width: element.offsetWidth,
+      styleWidth: element.style.width,
+    }
 
+    // apply feedback styling
     element.textContent = message
-    element.className = 'copy-btn text-green-400 font-medium text-sm'
+    element.className = 'copy-btn text-green-400 font-medium text-sm min-w-[3rem]'
+    element.style.width = `${originalState.width}px`
 
     const timeoutId = setTimeout(() => {
-      element.textContent = originalText
-      element.className = originalClass
+      restoreElementState(element, originalState)
     }, duration)
 
-    return timeoutId // return to allow cancellation
+    // return object w/ timeout ID and revert callback
+    return {
+      timeoutId,
+      revert: () => {
+        clearTimeout(timeoutId)
+        restoreElementState(element, originalState)
+      }
+    }
   }
 
   // toggle element visibility with animation

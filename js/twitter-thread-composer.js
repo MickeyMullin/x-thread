@@ -221,6 +221,10 @@ const createTwitterThreadComposer = () => {
         tweet.copied = true
         scrollToTweet(nextIndex)
         updateDisplay()
+
+        if (copyNextFeedbackTimeout) {
+          copyNextFeedbackTimeout.revert()
+        }
         copyNextFeedbackTimeout = domUtils.showTemporaryFeedback(copyNext, 'Copied!', 1000)
       }
     })
@@ -230,8 +234,7 @@ const createTwitterThreadComposer = () => {
         tweet.copied = false
       })
       if (copyNextFeedbackTimeout) {
-        clearTimeout(copyNextFeedbackTimeout)
-        copyNextFeedbackTimeout = null
+        copyNextFeedbackTimeout.revert()
       }
       updateDisplay()
       domUtils.showTemporaryFeedback(resetCopy, 'Reset!', 1000)

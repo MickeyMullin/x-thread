@@ -1,0 +1,79 @@
+/* /css/styes.css */
+
+/* Tailwind config */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts import for Space Grotesk */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+/* custom utility classes */
+@layer utilities {
+  .font-twitter {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+}
+
+/* component styles */
+@layer components {
+  .tweet-display {
+    text-indent: 0;
+    word-wrap: break-word;
+  }
+
+  /* tweet copy state */
+  .tweet-copied {
+    @apply opacity-50 bg-gray-700;
+
+    /* gray-700 equivalent */
+    /* background-color: rgb(55 65 81);
+    opacity: 0.5; */
+  }
+
+  .tweet-card {
+    @apply bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  .char-counter-normal {
+    @apply text-sm font-medium text-gray-400;
+  }
+
+  .char-counter-over {
+    @apply text-sm font-medium text-red-400 font-bold;
+  }
+
+  .char-counter-warning {
+    @apply text-sm font-medium text-yellow-400;
+  }
+}
+
+/* Custom animations and transitions */
+[data-tweet-id] {
+  transition: none !important;
+  /* smooth transitions for tweet cards */
+  /* transition: all 0.3s ease-out; */
+}
+
+[data-tweet-id]:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  transform: translateY(-2px);
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out !important;
+}
+
+button {
+  transition: all 0.2s ease-out;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+textarea:focus {
+  transform: scale(1.02);
+  transition: transform 0.2s ease-out;
+}
+
+#charCounter {
+  transition: all 0.2s ease-out;
+}

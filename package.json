@@ -1,0 +1,17 @@
+{
+  "name": "x-thread",
+  "version": "1.0.0",
+  "description": "A web app that splits long text into Twitter-sized threads",
+  "scripts": {
+    "build-css": "tailwindcss -i ./src/styles.css -o ./css/styles.css --watch",
+    "build-css-prod": "tailwindcss -i ./src/styles.css -o ./css/styles.css --minify",
+    "dev": "npm run build-css",
+    "build": "npm run build-css-prod"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  },
+  "keywords": ["twitter", "threads", "social-media", "text-processing"],
+  "author": "Mickey Mullin",
+  "license": "MIT"
+}

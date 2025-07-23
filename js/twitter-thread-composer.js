@@ -25,9 +25,10 @@ const createTwitterThreadComposer = () => {
   let copyNextFeedbackTimeout = null
   let resetCopy
 
-  let animationsEnabled = false
+  let animationsEnabled = true
   let animationToggle
 
+  let isInitialRender = true
   let lastRenderedTweets = []
   let previousTweetCount = 0
 
@@ -175,6 +176,26 @@ const createTwitterThreadComposer = () => {
     })
   }
 
+  const scrollToTweet = (tweetIndex) => {
+    if (tweets.length === 0) return
+
+    let idx
+    if (tweetIndex === 'last' || tweetIndex === 'end' || tweetIndex === 'bottom') {
+      idx = tweets.length - 1
+    } else if (tweetIndex === 'first' || tweetIndex === 'start' || tweetIndex === 'top') {
+      idx = 0
+    } else {
+      idx = tweetIndex
+    }
+
+    const tweet = tweets[idx]
+    const card = threadPreview.querySelector(`[data-tweet-id="${tweet.id}"]`)
+
+    if (card) {
+      domUtils.scrollToElement(card, { behavior: 'smooth', block: 'start' })
+    }
+  }
+
   // setup button hover and click animations
   const setupButtonAnimations = () => {
     // apply to all main buttons
@@ -198,16 +219,11 @@ const createTwitterThreadComposer = () => {
       if (nextIndex === -1) return
 
       const tweet = tweets[nextIndex]
-      const card = threadPreview.querySelector(`[data-tweet-id="${tweet.id}"]`)
       const success = await domUtils.copyToClipboard(tweet.text)
 
       if (success) {
         tweet.copied = true
-
-        if (card) {
-          domUtils.scrollToElement(card, { behavior: 'smooth', block: 'start' })
-        }
-
+        scrollToTweet(nextIndex)
         updateDisplay()
         copyNextFeedbackTimeout = domUtils.showTemporaryFeedback(copyNext, 'Copied!', 1000)
       }
@@ -223,6 +239,9 @@ const createTwitterThreadComposer = () => {
       }
       updateDisplay()
       domUtils.showTemporaryFeedback(resetCopy, 'Reset!', 1000)
+
+      // scroll to top after reset
+      scrollToTweet(0)
     })
   }
 
@@ -265,19 +284,37 @@ const createTwitterThreadComposer = () => {
     // suppress "are you sure" confirmation if editing while only some tweets are copied
     suppressConfirmCheckbox.addEventListener('change', (e) => { suppressConfirm = e.target.checked })
 
-    threadIndicators.addEventListener('change', (e) => {
-      includeThreadIndicators = e.target.checked
-      setHashParam('ind', e.target.checked ? 'y' : 'n')
+    threadIndicators.addEventListener('change', threadIndicatorsChangeHandler)
+    // threadIndicators.addEventListener('change', (e) => {
+    //   includeThreadIndicators = e.target.checked
+    //   setHashParam('ind', e.target.checked ? 'y' : 'n')
 
-      // rebuild display tweets from current text
-      if (mainText.value.trim()) {
-        const baseParts = splitIntoParts(mainText.value)
-        buildTweetsFromParts(baseParts)
-      } else {
-        tweets = []
-        updateDisplay()
-      }
-    })
+    //   // rebuild display tweets from current text
+    //   if (mainText.value.trim()) {
+    //     const baseParts = splitIntoParts(mainText.value)
+    //     buildTweetsFromParts(baseParts)
+    //   } else {
+    //     tweets = []
+    //     updateDisplay()
+    //   }
+    // })
+  }
+
+  const threadIndicatorsChangeHandler = (e) => {
+    includeThreadIndicators = e.target.checked
+    setHashParam('ind', e.target.checked ? 'y' : 'n')
+
+    // mark as non-initial render since this is a settings change
+    isInitialRender = false
+
+    // rebuild display tweets from current text
+    if (mainText.value.trim()) {
+      const baseParts = splitIntoParts(mainText.value)
+      buildTweetsFromParts(baseParts)
+    } else {
+      tweets = []
+      updateDisplay()
+    }
   }
 
   // update or add tweet cards
@@ -295,7 +332,8 @@ const createTwitterThreadComposer = () => {
         setupTweetCardListeners(card)
 
         // TODO: when animations are enabled, these styles should not override .tweet-copied
-        if (animationsEnabled) {
+        // only animate NEW cards if animations enabled AND not initial render
+        if (animationsEnabled && !isInitialRender) {
           card.style.opacity = '0'
           card.style.transform = 'translateY(20px)'
           setTimeout(() => {
@@ -305,7 +343,7 @@ const createTwitterThreadComposer = () => {
           }, idx * 50)
         }
       } else {
-        // handle copying
+        // update existing card (copy state, content, etc.)
         if (tweet.copied) {
           card.classList.add('tweet-copied')
         } else {
@@ -329,6 +367,9 @@ const createTwitterThreadComposer = () => {
         charSpan.className = `text-xs font-mono ${isOverLimit ? 'text-red-400 font-bold' : remaining < 20 ? 'text-yellow-400' : 'text-gray-400'}`
       }
     })
+
+    // initial render is complete
+    isInitialRender = true
   }
 
   /********************
@@ -363,8 +404,11 @@ const createTwitterThreadComposer = () => {
   const autoSplit = () => {
     const text = mainText.value
     if (text.trim()) {
-      const parts = splitIntoParts(text)
-      buildTweetsFromParts(parts)
+      handleTextInput()
+    } else {
+      // clear if no text
+      tweets = []
+      updateDisplay()
     }
   }
 
@@ -374,10 +418,6 @@ const createTwitterThreadComposer = () => {
 
     // generate display tweets from base tweets
     tweets = generateDisplayTweets(baseTweets)
-
-    // TODO: remove
-    // applyThreadIndicators(tweets)
-    // finalizeTweetText(tweets)
 
     updateDisplay()
   }
@@ -457,6 +497,17 @@ const createTwitterThreadComposer = () => {
   // handle text input changes
   const handleTextInput = () => {
     const text = mainText.value.trim()
+    const cursorPos = mainText.selectionStart
+    const textLength = mainText.value.length
+
+    // determine if cursor is at/near end
+    const isAtEnd = cursorPos >= textLength - 10
+
+    // if going from no tweets to tweets, mark as initial render
+    if (tweets.length === 0 && text.length > 0) {
+      isInitialRender = true
+    }
+
     tweets = []
 
     if (text.length === 0) {
@@ -467,6 +518,11 @@ const createTwitterThreadComposer = () => {
     const baseParts = splitIntoParts(mainText.value)
     buildTweetsFromParts(baseParts)
     lastText = mainText.value
+
+    // scroll preview pane to bottom if typing at end
+    if (isAtEnd) {
+      scrollToTweet('end')
+    }
   }
 
   // initialize utilities and DOM elements
@@ -677,26 +733,32 @@ const createTwitterThreadComposer = () => {
   // update thread preview
   const updateThreadPreview = async () => {
     if (tweets.length === 0) {
+      // going to empty state
       if (await handleEmptyState()) {
         lastRenderedTweets = []
-        return
       }
+      return
     }
 
     // only update if tweets actually changed
     if (!checkTweetsChanged()) return
 
-    if (animationsEnabled) {
-      await animationUtils.fadeElement(emptyState, 'out', 200)
+    // hide empty state if it's showing
+    if (emptyState.style.display !== 'none') {
+      if (animationsEnabled) {
+        await animationUtils.fadeElement(emptyState, 'out', 200)
+      }
+      emptyState.style.display = 'none'
     }
-    emptyState.style.display = 'none'
+
+    // show thread preview
     threadPreview.style.display = 'block'
+    threadPreview.style.opacity = '1' // ensure container is visible
 
     // find which tweets need updating
     removeDeletedCards()
     updateOrAddCards()
 
-    threadPreview.style.opacity = '1'
     lastRenderedTweets = JSON.parse(JSON.stringify(tweets))
   }
 

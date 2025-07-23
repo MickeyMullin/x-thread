@@ -22,14 +22,18 @@
   opacity: 0.5;
 }
 
-/* smooth transitions for tweet cards */
+/* disable problematic auto-transitions that interfere with controlled animations */
 [data-tweet-id] {
-    transition: all 0.3s ease-out;
+  transition: none !important;
+    /* smooth transitions for tweet cards */
+    /* transition: all 0.3s ease-out; */
 }
 
+/* only enable transitions on hover */
 [data-tweet-id]:hover {
-    transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out !important;
 }
 
 /* button animations */

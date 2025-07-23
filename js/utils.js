@@ -25,13 +25,13 @@ const createAnimationUtils = () => {
 
   // helper for easing functions
   const easingFunctions = {
-      linear: t => t,
-      easeInQuad: t => t * t,
-      easeOutQuad: t => t * (2 - t),
-      easeInOutQuad: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-      easeInCubic: t => t * t * t,
-      easeOutCubic: t => (--t) * t * t + 1,
-      easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
+    linear: t => t,
+    easeInQuad: t => t * t,
+    easeOutQuad: t => t * (2 - t),
+    easeInOutQuad: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+    easeInCubic: t => t * t * t,
+    easeOutCubic: t => (--t) * t * t + 1,
+    easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
   }
 
   // fade element in/out
@@ -110,324 +110,324 @@ const createAnimationUtils = () => {
 
 // DOM manipulation utilities factory
 const createDOMUtils = () => {
-    // private helper for element validation
-    const isValidElement = (element) => {
-        return element && element.nodeType === Node.ELEMENT_NODE
+  // private helper for element validation
+  const isValidElement = (element) => {
+    return element && element.nodeType === Node.ELEMENT_NODE
+  }
+
+  // batch add event listeners
+  const addEventListeners = (element, eventMap) => {
+    if (!isValidElement(element)) return []
+
+    const cleanupFunctions = []
+
+    Object.entries(eventMap).forEach(([event, handler]) => {
+      const cleanup = addEventListenerWithCleanup(element, event, handler)
+      if (cleanup) cleanupFunctions.push(cleanup)
+    })
+
+    // return function to cleanup all listeners
+    return () => {
+      cleanupFunctions.forEach(cleanup => cleanup())
     }
+  }
 
-    // batch add event listeners
-    const addEventListeners = (element, eventMap) => {
-        if (!isValidElement(element)) return []
+  // add event listener with cleanup
+  const addEventListenerWithCleanup = (element, event, handler, options = {}) => {
+    if (!isValidElement(element)) return null
 
-        const cleanupFunctions = []
+    element.addEventListener(event, handler, options)
 
-        Object.entries(eventMap).forEach(([event, handler]) => {
-            const cleanup = addEventListenerWithCleanup(element, event, handler)
-            if (cleanup) cleanupFunctions.push(cleanup)
-        })
-
-        // return function to cleanup all listeners
-        return () => {
-            cleanupFunctions.forEach(cleanup => cleanup())
-        }
+    // return cleanup function
+    return () => {
+      element.removeEventListener(event, handler, options)
     }
+  }
 
-    // add event listener with cleanup
-    const addEventListenerWithCleanup = (element, event, handler, options = {}) => {
-        if (!isValidElement(element)) return null
+  // copy text to clipboard with fallback
+  const copyToClipboard = async (text) => {
+    if (!text) return false
 
-        element.addEventListener(event, handler, options)
-
-        // return cleanup function
-        return () => {
-            element.removeEventListener(event, handler, options)
-        }
-    }
-
-    // copy text to clipboard with fallback
-    const copyToClipboard = async (text) => {
-        if (!text) return false
-
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(text)
-                return true
-            } else {
-                // fallback for older browsers
-                return fallbackCopyToClipboard(text)
-            }
-        } catch (error) {
-            console.warn('Clipboard copy failed:', error)
-            return fallbackCopyToClipboard(text)
-        }
-    }
-
-    // create element with attributes and content
-    const createElement = (tag, attributes = {}, content = '') => {
-        const element = document.createElement(tag)
-
-        Object.entries(attributes).forEach(([key, value]) => {
-            if (key === 'className') {
-                element.className = value
-            } else if (key === 'dataset') {
-                Object.entries(value).forEach(([dataKey, dataValue]) => {
-                    element.dataset[dataKey] = dataValue
-                })
-            } else {
-                element.setAttribute(key, value)
-            }
-        })
-
-        if (content) {
-            if (typeof content === 'string') {
-                element.textContent = content
-            } else if (isValidElement(content)) {
-                element.appendChild(content)
-            }
-        }
-
-        return element
-    }
-
-    // fallback clipboard method
-    const fallbackCopyToClipboard = (text) => {
-        const textArea = document.createElement('textarea')
-        textArea.value = text
-        textArea.style.position = 'fixed'
-        textArea.style.left = '-999999px'
-        textArea.style.top = '-999999px'
-
-        document.body.appendChild(textArea)
-        textArea.focus()
-        textArea.select()
-
-        try {
-            const successful = document.execCommand('copy')
-            document.body.removeChild(textArea)
-            return successful
-        } catch (error) {
-            document.body.removeChild(textArea)
-            return false
-        }
-    }
-
-    // find elements by various selectors
-    const findElements = (selector, context = document) => {
-        try {
-            return Array.from(context.querySelectorAll(selector))
-        } catch (error) {
-            console.warn('Invalid selector:', selector)
-            return []
-        }
-    }
-
-    // smooth scroll to element
-    const scrollToElement = (element, options = {}) => {
-        if (!isValidElement(element)) return false
-
-        const defaultOptions = {
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-        }
-
-        element.scrollIntoView({ ...defaultOptions, ...options })
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text)
         return true
+      } else {
+        // fallback for older browsers
+        return fallbackCopyToClipboard(text)
+      }
+    } catch (error) {
+      console.warn('Clipboard copy failed:', error)
+      return fallbackCopyToClipboard(text)
+    }
+  }
+
+  // create element with attributes and content
+  const createElement = (tag, attributes = {}, content = '') => {
+    const element = document.createElement(tag)
+
+    Object.entries(attributes).forEach(([key, value]) => {
+      if (key === 'className') {
+        element.className = value
+      } else if (key === 'dataset') {
+        Object.entries(value).forEach(([dataKey, dataValue]) => {
+          element.dataset[dataKey] = dataValue
+        })
+      } else {
+        element.setAttribute(key, value)
+      }
+    })
+
+    if (content) {
+      if (typeof content === 'string') {
+        element.textContent = content
+      } else if (isValidElement(content)) {
+        element.appendChild(content)
+      }
     }
 
-    // show temporary feedback on element
-    const showTemporaryFeedback = (element, message, duration = 1000) => {
-        if (!isValidElement(element)) return false
+    return element
+  }
 
-        const originalText = element.textContent
-        const originalClass = element.className
+  // fallback clipboard method
+  const fallbackCopyToClipboard = (text) => {
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    textArea.style.position = 'fixed'
+    textArea.style.left = '-999999px'
+    textArea.style.top = '-999999px'
 
-        element.textContent = message
-        element.className = 'copy-btn text-green-400 font-medium text-sm'
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
 
-        const timeoutId = setTimeout(() => {
-            element.textContent = originalText
-            element.className = originalClass
-        }, duration)
+    try {
+      const successful = document.execCommand('copy')
+      document.body.removeChild(textArea)
+      return successful
+    } catch (error) {
+      document.body.removeChild(textArea)
+      return false
+    }
+  }
 
-        return timeoutId // return to allow cancellation
+  // find elements by various selectors
+  const findElements = (selector, context = document) => {
+    try {
+      return Array.from(context.querySelectorAll(selector))
+    } catch (error) {
+      console.warn('Invalid selector:', selector)
+      return []
+    }
+  }
+
+  // smooth scroll to element
+  const scrollToElement = (element, options = {}) => {
+    if (!isValidElement(element)) return false
+
+    const defaultOptions = {
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'nearest'
     }
 
-    // toggle element visibility with animation
-    const toggleVisibility = (element, force = null) => {
-        if (!isValidElement(element)) return false
+    element.scrollIntoView({ ...defaultOptions, ...options })
+    return true
+  }
 
-        const isHidden = element.classList.contains('hidden')
-        const shouldShow = force !== null ? force : isHidden
+  // show temporary feedback on element
+  const showTemporaryFeedback = (element, message, duration = 1000) => {
+    if (!isValidElement(element)) return false
 
-        if (shouldShow) {
-            element.classList.remove('hidden')
-            element.style.display = 'block'
-        } else {
-            element.classList.add('hidden')
-            element.style.display = 'none'
-        }
+    const originalText = element.textContent
+    const originalClass = element.className
 
-        return shouldShow
+    element.textContent = message
+    element.className = 'copy-btn text-green-400 font-medium text-sm'
+
+    const timeoutId = setTimeout(() => {
+      element.textContent = originalText
+      element.className = originalClass
+    }, duration)
+
+    return timeoutId // return to allow cancellation
+  }
+
+  // toggle element visibility with animation
+  const toggleVisibility = (element, force = null) => {
+    if (!isValidElement(element)) return false
+
+    const isHidden = element.classList.contains('hidden')
+    const shouldShow = force !== null ? force : isHidden
+
+    if (shouldShow) {
+      element.classList.remove('hidden')
+      element.style.display = 'block'
+    } else {
+      element.classList.add('hidden')
+      element.style.display = 'none'
     }
 
-    // public API
-    return {
-        copyToClipboard,
-        showTemporaryFeedback,
-        scrollToElement,
-        toggleVisibility,
-        addEventListenerWithCleanup,
-        addEventListeners,
-        createElement,
-        findElements,
-        // utility methods
-        isValidElement
-    }
+    return shouldShow
+  }
+
+  // public API
+  return {
+    copyToClipboard,
+    showTemporaryFeedback,
+    scrollToElement,
+    toggleVisibility,
+    addEventListenerWithCleanup,
+    addEventListeners,
+    createElement,
+    findElements,
+    // utility methods
+    isValidElement
+  }
 }
 
 // text processing utilities factory
 const createTextUtils = () => {
-    // count sentences in text
-    const countSentences = (text) => {
-        if (!isValidText(text)) return 0
-        return text.split(/[.!?]+/).filter(s => s.trim().length > 0).length
+  // count sentences in text
+  const countSentences = (text) => {
+    if (!isValidText(text)) return 0
+    return text.split(/[.!?]+/).filter(s => s.trim().length > 0).length
+  }
+
+  // count words in text
+  const countWords = (text) => {
+    if (!isValidText(text)) return 0
+    return normalizeWhitespace(text).split(' ').length
+  }
+
+  // escape HTML for safe display
+  const escapeHtml = (text) => {
+    if (!isValidText(text)) return ''
+
+    const div = document.createElement('div')
+    div.textContent = text
+    return div.innerHTML
+  }
+
+  // smart text splitting with various strategies
+  const findOptimalSplitPoint = (text, maxLength) => {
+    if (text.length <= maxLength) return text.length
+
+    let splitPoint = maxLength
+
+    // strategy 1: sentence boundaries (highest priority)
+    const sentenceEnd = text.lastIndexOf('.', maxLength)
+    const questionEnd = text.lastIndexOf('?', maxLength)
+    const exclamEnd = text.lastIndexOf('!', maxLength)
+    const sentenceBoundary = Math.max(sentenceEnd, questionEnd, exclamEnd)
+
+    if (sentenceBoundary > maxLength * 0.6) {
+      return sentenceBoundary + 1
     }
 
-    // count words in text
-    const countWords = (text) => {
-        if (!isValidText(text)) return 0
-        return normalizeWhitespace(text).split(' ').length
+    // strategy 2: paragraph breaks
+    const paragraphBreak = text.lastIndexOf('\n\n', maxLength)
+    if (paragraphBreak > maxLength * 0.5) {
+      return paragraphBreak + 2
     }
 
-    // escape HTML for safe display
-    const escapeHtml = (text) => {
-        if (!isValidText(text)) return ''
-
-        const div = document.createElement('div')
-        div.textContent = text
-        return div.innerHTML
+    // strategy 3: line breaks
+    const lineBreak = text.lastIndexOf('\n', maxLength)
+    if (lineBreak > maxLength * 0.6) {
+      return lineBreak + 1
     }
 
-    // smart text splitting with various strategies
-    const findOptimalSplitPoint = (text, maxLength) => {
-        if (text.length <= maxLength) return text.length
-
-        let splitPoint = maxLength
-
-        // strategy 1: sentence boundaries (highest priority)
-        const sentenceEnd = text.lastIndexOf('.', maxLength)
-        const questionEnd = text.lastIndexOf('?', maxLength)
-        const exclamEnd = text.lastIndexOf('!', maxLength)
-        const sentenceBoundary = Math.max(sentenceEnd, questionEnd, exclamEnd)
-
-        if (sentenceBoundary > maxLength * 0.6) {
-            return sentenceBoundary + 1
-        }
-
-        // strategy 2: paragraph breaks
-        const paragraphBreak = text.lastIndexOf('\n\n', maxLength)
-        if (paragraphBreak > maxLength * 0.5) {
-            return paragraphBreak + 2
-        }
-
-        // strategy 3: line breaks
-        const lineBreak = text.lastIndexOf('\n', maxLength)
-        if (lineBreak > maxLength * 0.6) {
-            return lineBreak + 1
-        }
-
-        // strategy 4: word boundaries (fallback)
-        const lastSpace = text.lastIndexOf(' ', maxLength)
-        if (lastSpace > maxLength * 0.6) {
-            return lastSpace
-        }
-
-        // last resort: hard cut at maxLength
-        return maxLength
+    // strategy 4: word boundaries (fallback)
+    const lastSpace = text.lastIndexOf(' ', maxLength)
+    if (lastSpace > maxLength * 0.6) {
+      return lastSpace
     }
 
-    // convert newlines to br tags
-    const formatTextForDisplay = (text) => {
-      if (!isValidText(text)) return ''
-      return escapeHtml(text).replace(/\n/g, '<br>')
-    }
+    // last resort: hard cut at maxLength
+    return maxLength
+  }
 
-    // generate text statistics
-    const getTextStats = (text) => {
-        return {
-            characters: text.length,
-            words: countWords(text),
-            sentences: countSentences(text),
-            lines: text.split('\n').length
-        }
-    }
+  // convert newlines to br tags
+  const formatTextForDisplay = (text) => {
+    if (!isValidText(text)) return ''
+    return escapeHtml(text).replace(/\n/g, '<br>')
+  }
 
-    // private helper for validating text input
-    const isValidText = (text) => {
-        return typeof text === 'string' && text.length > 0
-    }
-
-    // private helper for normalizing whitespace
-    const normalizeWhitespace = (text) => {
-        return text.replace(/\s+/g, ' ').trim()
-    }
-
-    // parse manual separators (---)
-    const parseManualSeparators = (text) => {
-        if (!isValidText(text)) return [text || '']
-
-        const lines = text.split('\n')
-        const sections = []
-        let currentSection = []
-
-        for (const line of lines) {
-            if (line.trim() === '---') {
-                if (currentSection.length > 0) {
-                    sections.push(currentSection.join('\n'))
-                    currentSection = []
-                }
-            } else {
-                currentSection.push(line)
-            }
-        }
-
-        if (currentSection.length > 0) {
-            sections.push(currentSection.join('\n'))
-        }
-
-        return sections.length > 0 ? sections : [text]
-    }
-
-    // truncate text with ellipsis
-    const truncateText = (text, maxLength, ellipsis = '...') => {
-        if (!isValidText(text) || text.length <= maxLength) return text
-
-        const truncated = text.substring(0, maxLength - ellipsis.length)
-        const lastSpace = truncated.lastIndexOf(' ')
-
-        // try to break at word boundary
-        if (lastSpace > maxLength * 0.7) {
-            return truncated.substring(0, lastSpace) + ellipsis
-        }
-
-        return truncated + ellipsis
-    }
-
-    // public API
+  // generate text statistics
+  const getTextStats = (text) => {
     return {
-        countSentences,
-        countWords,
-        escapeHtml,
-        findOptimalSplitPoint,
-        formatTextForDisplay,
-        getTextStats,
-        parseManualSeparators,
-        truncateText,
-        // utility methods
-        isValidText,
-        normalizeWhitespace,
+      characters: text.length,
+      words: countWords(text),
+      sentences: countSentences(text),
+      lines: text.split('\n').length
     }
+  }
+
+  // private helper for validating text input
+  const isValidText = (text) => {
+    return typeof text === 'string' && text.length > 0
+  }
+
+  // private helper for normalizing whitespace
+  const normalizeWhitespace = (text) => {
+    return text.replace(/\s+/g, ' ').trim()
+  }
+
+  // parse manual separators (---)
+  const parseManualSeparators = (text) => {
+    if (!isValidText(text)) return [text || '']
+
+    const lines = text.split('\n')
+    const sections = []
+    let currentSection = []
+
+    for (const line of lines) {
+      if (line.trim() === '---') {
+        if (currentSection.length > 0) {
+          sections.push(currentSection.join('\n'))
+          currentSection = []
+        }
+      } else {
+        currentSection.push(line)
+      }
+    }
+
+    if (currentSection.length > 0) {
+      sections.push(currentSection.join('\n'))
+    }
+
+    return sections.length > 0 ? sections : [text]
+  }
+
+  // truncate text with ellipsis
+  const truncateText = (text, maxLength, ellipsis = '...') => {
+    if (!isValidText(text) || text.length <= maxLength) return text
+
+    const truncated = text.substring(0, maxLength - ellipsis.length)
+    const lastSpace = truncated.lastIndexOf(' ')
+
+    // try to break at word boundary
+    if (lastSpace > maxLength * 0.7) {
+      return truncated.substring(0, lastSpace) + ellipsis
+    }
+
+    return truncated + ellipsis
+  }
+
+  // public API
+  return {
+    countSentences,
+    countWords,
+    escapeHtml,
+    findOptimalSplitPoint,
+    formatTextForDisplay,
+    getTextStats,
+    parseManualSeparators,
+    truncateText,
+    // utility methods
+    isValidText,
+    normalizeWhitespace,
+  }
 }
 
 // initialize utilities when DOM is ready

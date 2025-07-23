@@ -1,0 +1,17 @@
+// /react/styles/variables.scss
+
+// SCSS variables for custom styling
+// complement Tailwind and provide consistent theming
+
+// animation durations
+$animation-fast: 0.15s;
+$animation-normal: 0.2s;
+$animation-slow: 0.3s;
+
+// custom shadows for tweet cards
+$tweet-card-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+$tweet-card-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.3);
+
+// transition easings
+$ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+$ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);

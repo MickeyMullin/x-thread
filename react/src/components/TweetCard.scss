@@ -1,0 +1,19 @@
+// /react/src/components/TweetCard.scss
+
+.tweet-card {
+  transition: none !important;
+
+  &:hover {
+    box-shadow: $tweet-card-shadow;
+    transform: translateY(-2px);
+    transition: transform $animation-normal ease-out, box-shadow $animation-normal ease-out !important;
+  }
+
+  .copy-btn {
+    transition: all $animation-normal ease-out;
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+}

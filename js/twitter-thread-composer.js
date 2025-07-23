@@ -16,10 +16,6 @@ const createTwitterThreadComposer = () => {
   let threadPreview
   let emptyState
 
-  // let suppressConfirm = false
-  // let suppressConfirmCheckbox
-  // let lastText = ''
-
   // buttons for copy features
   let copyNext
   let copyNextFeedbackTimeout = null
@@ -263,41 +259,7 @@ const createTwitterThreadComposer = () => {
     document.getElementById('clearAll').addEventListener('click', clearAll)
     document.getElementById('insertSeparator').addEventListener('click', insertSeparator)
 
-    // TODO: fix copy-edit confirmation
-    // mainText.addEventListener('input', () => {
-    //   const hasCopied = tweets.some(tweet => tweet.copied)
-    //   const allCopied = tweets.every(tweet => tweet.copied)
-    //   if (!hasCopied || allCopied || suppressConfirm) {
-    //     return
-    //   }
-
-    //   if (!confirm('Editing will reset copy states. Proceed?')) {
-    //     mainText.value = lastText
-    //     // restore cursor to end
-    //     mainText.setSelectionRange(lastText.length, lastText.length)
-    //     return
-    //   }
-
-    //   // if confirmed, allow debounced handler to proceed
-    // })
-
-    // suppress "are you sure" confirmation if editing while only some tweets are copied
-    suppressConfirmCheckbox.addEventListener('change', (e) => { suppressConfirm = e.target.checked })
-
     threadIndicators.addEventListener('change', threadIndicatorsChangeHandler)
-    // threadIndicators.addEventListener('change', (e) => {
-    //   includeThreadIndicators = e.target.checked
-    //   setHashParam('ind', e.target.checked ? 'y' : 'n')
-
-    //   // rebuild display tweets from current text
-    //   if (mainText.value.trim()) {
-    //     const baseParts = splitIntoParts(mainText.value)
-    //     buildTweetsFromParts(baseParts)
-    //   } else {
-    //     tweets = []
-    //     updateDisplay()
-    //   }
-    // })
   }
 
   const threadIndicatorsChangeHandler = (e) => {
@@ -331,7 +293,6 @@ const createTwitterThreadComposer = () => {
         // attach event handlers to this new card
         setupTweetCardListeners(card)
 
-        // TODO: when animations are enabled, these styles should not override .tweet-copied
         // only animate NEW cards if animations enabled AND not initial render
         if (animationsEnabled && !isInitialRender) {
           card.style.opacity = '0'
@@ -437,39 +398,37 @@ const createTwitterThreadComposer = () => {
 
     return `
             <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow ${tweet.copied ? 'tweet-copied' : ''}" 
-                 data-tweet-id="${tweet.id}" data-index="${index}">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                            ${index + 1}
-                        </div>
-                        <span class="text-sm text-gray-400">Tweet ${index + 1}/${tweets.length}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-mono ${isOverLimit ? 'text-red-400 font-bold' :
-        remaining < 20 ? 'text-yellow-400' : 'text-gray-400'
-      }">
-                            ${isOverLimit ? `+${Math.abs(remaining)}` : remaining}
-                        </span>
-                        <button class="copy-btn text-blue-400 hover:text-blue-300 text-sm font-medium">
-                            Copy
-                        </button>
-                    </div>
+               data-tweet-id="${tweet.id}" data-index="${index}">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    ${index + 1}
+                  </div>
+                  <span class="text-sm text-gray-400">Tweet ${index + 1}/${tweets.length}</span>
                 </div>
-                
-                <div class="tweet-content ${isOverLimit ? 'border-red-600 bg-red-900/20' : ''}">
-                    <div class="tweet-display p-3 bg-gray-700 rounded-lg text-white text-base leading-relaxed break-words">
-                        ${textUtils.formatTextForDisplay(tweet.text)}
-                    </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-mono ${isOverLimit ? 'text-red-400 font-bold' : remaining < 20 ? 'text-yellow-400' : 'text-gray-400'}">
+                    ${isOverLimit ? `+${Math.abs(remaining)}` : remaining}
+                  </span>
+                  <button class="copy-btn text-blue-400 hover:text-blue-300 text-sm font-medium">
+                    Copy
+                  </button>
                 </div>
+              </div>
                 
-                ${isOverLimit ? `
-                    <div class="mt-2 text-sm text-red-400 font-medium">
-                        ⚠️ Over limit by ${Math.abs(remaining)} characters
-                    </div>
-                ` : ''}
+              <div class="tweet-content ${isOverLimit ? 'border-red-600 bg-red-900/20' : ''}">
+                <div class="tweet-display p-3 bg-gray-700 rounded-lg text-white text-base leading-relaxed break-words">
+                  ${textUtils.formatTextForDisplay(tweet.text)}
+                </div>
+              </div>
+                
+              ${isOverLimit ? `
+                <div class="mt-2 text-sm text-red-400 font-medium">
+                  ⚠️ Over limit by ${Math.abs(remaining)} characters
+                </div>
+              ` : ''}
             </div>
-        `
+           `
   }
 
   // track next uncopied for copy next feature
@@ -542,8 +501,6 @@ const createTwitterThreadComposer = () => {
     charCounter = document.getElementById('charCounter')
     threadPreview = document.getElementById('threadPreview')
     emptyState = document.getElementById('emptyState')
-
-    suppressConfirmCheckbox = document.getElementById('suppressConfirm')
 
     copyNext = document.getElementById('copyNext')
     resetCopy = document.getElementById('resetCopy')

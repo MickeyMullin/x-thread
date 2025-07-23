@@ -62,52 +62,6 @@ const createTwitterThreadComposer = () => {
     })
   }
 
-  // apply thread indicators with splitting
-  const applyThreadIndicators = (tweets) => {
-    if (!includeThreadIndicators) return
-
-    let i = 0
-    while (i < tweets.length) {
-      const total = tweets.length
-      const indicator = getIndicator(i, total)
-      const fullLen = tweets[i].baseText.length + indicator.length
-
-      if (fullLen > maxLength) {
-        // tweet text plus indicator > maxLength
-        if (i === total - 1) {
-          // omit if the final tweet would go over with '/End' indicator
-          tweets[i].omitIndicator = true
-          i++
-        } else {
-          const indicatorLen = indicator.length
-          const splitPoint = textUtils.findOptimalSplitPoint(tweets[i].baseText, maxLength - indicatorLen)
-
-          if (splitPoint > 0) {
-            const part1 = tweets[i].baseText.substring(0, splitPoint).trim()
-            const part2 = tweets[i].baseText.substring(splitPoint).trim()
-            tweets[i].baseText = part1
-
-            const newTweet = {
-              baseText: part2,
-              id: Date.now() + i + 1,
-              copied: false,
-              omitIndicator: false,
-              // text: part2 || '', // no?
-            }
-
-            tweets.splice(i + 1, 0, newTweet)
-            i++
-          } else {
-            tweets[i].omitIndicator = true
-            i++
-          }
-        }
-      } else {
-        i++
-      }
-    }
-  }
-
   // check if tweets changed
   const checkTweetsChanged = () => {
     return tweets.length !== lastRenderedTweets.length
@@ -130,18 +84,69 @@ const createTwitterThreadComposer = () => {
     }))
   }
 
-  // set final tweet text with indicators
-  const finalizeTweetText = (tweets) => {
-    if (includeThreadIndicators) {
-      for (let i = 0; i < tweets.length; i++) {
-        const indicator = getIndicator(i, tweets.length, tweets[i].omitIndicator)
-        tweets[i].text = tweets[i].baseText + indicator
-      }
-    } else {
-      tweets.forEach(tweet => {
-        tweet.text = tweet.baseText
-      })
+  // generate display tweets from base tweets (clean rebuild every time)
+  const generateDisplayTweets = (baseTweets) => {
+    if (!includeThreadIndicators) {
+      // no indicators needed, just copy base tweets and set text
+      return baseTweets.map(tweet => ({
+        ...tweet,
+        text: tweet.baseText
+      }))
     }
+
+    // apply indicators and split as needed
+    const displayTweets = baseTweets.map(tweet => ({ ...tweet }))
+
+    let i = 0
+    while (i < displayTweets.length) {
+      const total = displayTweets.length
+      const indicator = getIndicator(i, total)
+      const fullLen = displayTweets[i].baseText.length + indicator.length
+
+      if (fullLen > maxLength) {
+        // need to split this tweet
+        if (i === total - 1) {
+          // last tweet, omit indicator instead of splitting
+          displayTweets[i].omitIndicator = true
+          i++
+        } else {
+          const indicatorLen = indicator.length
+          const splitPoint = textUtils.findOptimalSplitPoint(displayTweets[i].baseText, maxLength - indicatorLen)
+
+          if (splitPoint > 0) {
+            const part1 = displayTweets[i].baseText.substring(0, splitPoint).trim()
+            const part2 = displayTweets[i].baseText.substring(splitPoint).trim()
+
+            displayTweets[i].baseText = part1
+
+            const newTweet = {
+              baseText: part2,
+              id: Date.now() + Math.random(), // ensure unique ID
+              copied: false,
+              omitIndicator: false
+            }
+
+            displayTweets.splice(i + 1, 0, newTweet)
+            // don't increment i, recheck current tweet with new total
+          } else {
+            // can't split meaningfully, omit indicator
+            displayTweets[i].omitIndicator = true
+            i++
+          }
+        }
+      } else {
+        i++
+      }
+    }
+
+    // now set final text with indicators
+    const finalTotal = displayTweets.length
+    displayTweets.forEach((tweet, index) => {
+      const indicator = getIndicator(index, finalTotal, tweet.omitIndicator)
+      tweet.text = tweet.baseText + indicator
+    })
+
+    return displayTweets
   }
 
   // handle empty state display
@@ -263,7 +268,15 @@ const createTwitterThreadComposer = () => {
     threadIndicators.addEventListener('change', (e) => {
       includeThreadIndicators = e.target.checked
       setHashParam('ind', e.target.checked ? 'y' : 'n')
-      updateDisplay() // refresh to apply/remove indicators later
+
+      // rebuild display tweets from current text
+      if (mainText.value.trim()) {
+        const baseParts = splitIntoParts(mainText.value)
+        buildTweetsFromParts(baseParts)
+      } else {
+        tweets = []
+        updateDisplay()
+      }
     })
   }
 
@@ -281,6 +294,7 @@ const createTwitterThreadComposer = () => {
         // attach event handlers to this new card
         setupTweetCardListeners(card)
 
+        // TODO: when animations are enabled, these styles should not override .tweet-copied
         if (animationsEnabled) {
           card.style.opacity = '0'
           card.style.transform = 'translateY(20px)'
@@ -355,9 +369,16 @@ const createTwitterThreadComposer = () => {
   }
 
   const buildTweetsFromParts = (baseParts) => {
-    tweets = createInitialTweets(baseParts)
-    applyThreadIndicators(tweets)
-    finalizeTweetText(tweets)
+    // create clean base tweets (no indicators)
+    const baseTweets = createInitialTweets(baseParts)
+
+    // generate display tweets from base tweets
+    tweets = generateDisplayTweets(baseTweets)
+
+    // TODO: remove
+    // applyThreadIndicators(tweets)
+    // finalizeTweetText(tweets)
+
     updateDisplay()
   }
 
@@ -692,18 +713,22 @@ const createTwitterThreadComposer = () => {
     setupEventListeners()
     updateDisplay()
     lastText = mainText.value
+
+    // process any text starting in the composer on page load
+    if (mainText.value.trim()) {
+      handleTextInput()
+    }
   }
 
   // return public interface
   return {
     init,
-    // expose methods that might be useful for testing or external use
+    addEmptyTweet,
     autoSplit,
     clearAll,
-    addEmptyTweet,
-    getTweets: () => [...tweets], // return copy to prevent external mutation
+    getMaxLength: () => maxLength,
     getTweetCount: () => tweets.length,
-    getMaxLength: () => maxLength
+    getTweets: () => [...tweets], // return copy to prevent external mutation
   }
 }
 

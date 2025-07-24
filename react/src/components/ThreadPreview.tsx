@@ -47,7 +47,6 @@ export const ThreadPreview = ({
     const tweet = tweets[idx]
     if (previewRef.current) {
       const card = previewRef.current.querySelector(`[data-tweet-id="${tweet.id}"]`)
-      console.debug('scrollto:', idx, card)
       if (card) {
         domUtils.scrollToElement(card, { behavior: 'smooth', block: 'start' })
       }

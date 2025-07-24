@@ -30,18 +30,23 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: react/package-lock.json
+        cache: 'pnpm'
+        cache-dependency-path: react/pnpm-lock.json
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
 
     - name: Install React dependencies
       run: |
         cd react
-        npm ci
+        pnpm install
 
     - name: Build React app
       run: |
         cd react
-        npm run build
+        pnpm run build
 
     - name: Prepare deployment directory
       run: |

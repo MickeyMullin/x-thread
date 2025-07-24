@@ -105,11 +105,11 @@ export const useDraft = (): UseDraftReturn => {
 
   // beforeunload backup save
   useEffect(() => {
-    const handleBeforeUnload = (text: string) => {
-      if (text.trim()) {
-        draftUtils.saveDraft(text)
-      }
-    }
+    // const handleBeforeUnload = (text: string) => {
+    //   if (text.trim()) {
+    //     draftUtils.saveDraft(text)
+    //   }
+    // }
 
     // note: we'll need to pass current text from the calling component
     // this is a placeholder - actual implementation will be in App component

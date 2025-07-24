@@ -56,9 +56,13 @@ export const createAnimationUtils = () => {
       const startOpacity = direction === 'in' ? 0 : 1
       const endOpacity = direction === 'in' ? 1 : 0
 
+      // store original display value
+      const originalDisplay = window.getComputedStyle(el).display || el.style.display
+
       el.style.opacity = startOpacity.toString()
 
-      if (direction === 'in') {
+      if (direction === 'in' && originalDisplay === 'none') {
+        // fallback for hidden elements
         el.style.display = 'block'
       }
 
@@ -69,6 +73,9 @@ export const createAnimationUtils = () => {
       setTimeout(() => {
         if (direction === 'out') {
           el.style.display = 'none'
+        } else {
+          // restore original display for fade in
+          el.style.display = originalDisplay === 'none' ? '' : originalDisplay
         }
         resolve(true)
       }, duration)

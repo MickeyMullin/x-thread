@@ -10,54 +10,72 @@ interface CharacterCounterProps {
 }
 
 export const CharacterCounter = ({ totalChars, tweetCount }: CharacterCounterProps): JSX.Element => {
-  const [displayText, setDisplayText] = useState<string>('')
+  const [numberValue, setNumberValue] = useState<number>(0)
+  const [textPart, setTextPart] = useState<string>('characters')
   const [displayClass, setDisplayClass] = useState<string>('')
+
   const counterRef = useRef<HTMLDivElement>(null)
+  const textRef = useRef<HTMLSpanElement>(null)
+
+  const previousNumberRef = useRef<number>(0)
   const previousTextRef = useRef<string>('')
+  const previousClassRef = useRef<string>('')
 
   useEffect(() => {
+    let newNumber: number
     let newText: string
     let newClass: string
 
     if (totalChars === 0) {
-      newText = '0 characters'
+      newNumber = 0
+      newText = 'characters'
       newClass = 'text-sm font-medium text-gray-400'
     } else if (tweetCount === 1 && totalChars <= MAX_TWEET_LENGTH) {
       const remaining = MAX_TWEET_LENGTH - totalChars
-      newText = `${remaining} characters remaining`
+      newNumber = remaining
+      newText = remaining === 1 ? 'character remaining' : 'characters remaining'
       newClass = remaining > 20
         ? 'text-sm font-medium text-green-400'
         : 'text-sm font-medium text-yellow-400'
     } else {
-      newText = `${totalChars} characters → ${tweetCount} tweets`
+      // for multi-tweet case, combine both numbers into text for now
+      newNumber = totalChars
+      newText = `characters → ${tweetCount} tweets`
       newClass = 'text-sm font-medium text-blue-400'
     }
 
-    // Animate counter change if text actually changed
+    // update number (no animation, just direct update)
+    if (previousNumberRef.current !== newNumber) {
+      setNumberValue(newNumber)
+      previousNumberRef.current = newNumber
+    }
+
+    // update text part
     if (previousTextRef.current !== newText) {
+      setTextPart(newText)
+      previousTextRef.current = newText
+    }
+
+    // update class (animate if changed)
+    if (previousClassRef.current !== newClass) {
       if (counterRef.current) {
-        animationUtils.fadeElement(counterRef.current, 'out', 100).then(() => {
-          setDisplayText(newText)
+        animationUtils.fadeElement(textRef.current,'out', 100).then(() => {
           setDisplayClass(newClass)
-          if (counterRef.current) {
-            animationUtils.fadeElement(counterRef.current, 'in', 100)
+          if (textRef.current) {
+            animationUtils.fadeElement(textRef.current, 'in', 100)
           }
         })
       } else {
-        setDisplayText(newText)
         setDisplayClass(newClass)
       }
-      previousTextRef.current = newText
+      previousClassRef.current = newClass
     }
+
   }, [totalChars, tweetCount])
 
   return (
-    <div
-      ref={counterRef}
-      id="charCounter"
-      className={displayClass}
-    >
-      {displayText}
+    <div id="charCounter" ref={counterRef} className={`${displayClass} whitespace-nowrap`}>
+      <span ref={textRef}>{numberValue}&nbsp;{textPart}</span>
     </div>
   )
 }

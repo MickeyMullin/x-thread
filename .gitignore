@@ -1,12 +1,21 @@
-# Mac
+# OS
 .DS_Store
+Thumbs.db
 
-# npm/pnpm
-node_modules/
+# logs
+logs
+*.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# npm/pnpm
+node_modules/
+dist
+dist-ssr
+*.local
+pnpm-workspace.yaml
 
 # environment files
 .env
@@ -17,13 +26,13 @@ yarn-error.log*
 
 # IDE files
 .vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
-Thumbs.db
-*.log
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # temporary files
 *.tmp

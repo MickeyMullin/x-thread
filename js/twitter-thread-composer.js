@@ -70,6 +70,17 @@ const createTwitterThreadComposer = () => {
       )
   }
 
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem('x-thread-draft')
+      updateDraftStatus(false)
+      return true
+    } catch (error) {
+      console.log('failed to clear draft from localStorage:', error)
+      return false
+    }
+  }
+
   // create initial tweet objects from parts
   const createInitialTweets = (baseParts) => {
     return baseParts.map((part, idx) => ({
@@ -166,6 +177,19 @@ const createTwitterThreadComposer = () => {
     }
   }
 
+  const loadDraft = () => {
+    try {
+      const stored = localStorage.getItem('x-thread-draft')
+      if (!stored) return null
+
+      const draft = JSON.parse(stored)
+      return draft.text || null
+    } catch (error) {
+      console.log('failed to load draft from localStorage:', error)
+      return null
+    }
+  }
+
   // remove deleted tweet cards
   const removeDeletedCards = () => {
     const existingCards = threadPreview.querySelectorAll('[data-tweet-id]')
@@ -176,6 +200,30 @@ const createTwitterThreadComposer = () => {
         card.remove()
       }
     })
+  }
+
+  const saveDraft = (text) => {
+    try {
+      const draft = {
+        text: text,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('x-thread-draft', JSON.stringify(draft))
+      updateDraftStatus(true)
+      return true
+    } catch (error) {
+      // check if localStorage full
+      if (error.name === 'QuoteExceededError') {
+        console.warn('localStorageFull; clearing draft to make space')
+        clearDraft()
+        domUtils.showToast('Storage full; draft cleared', 4000) // TODO: constant for warning delay
+        updateDraftStatus(false)
+        return false
+      }
+
+      console.log('failed to save draft to localStorage:', error)
+      return false
+    }
   }
 
   const scrollToTweet = (tweetIndex) => {
@@ -204,7 +252,8 @@ const createTwitterThreadComposer = () => {
     const buttons = [
       document.getElementById('addTweet'),
       document.getElementById('autoSplit'),
-      document.getElementById('clearAll'),
+      document.getElementById('clearDraft'),
+      document.getElementById('clearEditor'),
       document.getElementById('insertSeparator'),
       copyNext,
       resetCopy,
@@ -265,10 +314,16 @@ const createTwitterThreadComposer = () => {
 
     document.getElementById('addTweet').addEventListener('click', addEmptyTweet)
     document.getElementById('autoSplit').addEventListener('click', autoSplit)
-    document.getElementById('clearAll').addEventListener('click', clearAll)
+    document.getElementById('clearDraft').addEventListener('click', handleClearDraft)
+    document.getElementById('clearEditor').addEventListener('click', clearEditor)
     document.getElementById('insertSeparator').addEventListener('click', insertSeparator)
 
     threadIndicators.addEventListener('change', threadIndicatorsChangeHandler)
+
+    window.addEventListener('beforeunload', () => {
+      const text = mainText.value.trim()
+      if (text) saveDraft(text)
+    })
   }
 
   const threadIndicatorsChangeHandler = (e) => {
@@ -285,6 +340,20 @@ const createTwitterThreadComposer = () => {
     } else {
       tweets = []
       updateDisplay()
+    }
+  }
+
+  // update draft status indicator
+  const updateDraftStatus = (saved = false) => {
+    const statusEl = document.getElementById('draftStatus')
+    if (!statusEl) return
+
+    if (saved) {
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+      statusEl.textContent = `Draft saved at ${now}`
+      statusEl.classList.remove('hidden')
+    } else {
+      statusEl.classList.add('hidden')
     }
   }
 
@@ -393,7 +462,7 @@ const createTwitterThreadComposer = () => {
   }
 
   // clear all content
-  const clearAll = () => {
+  const clearEditor = () => {
     mainText.value = ''
     tweets = []
     updateDisplay()
@@ -462,6 +531,15 @@ const createTwitterThreadComposer = () => {
     return `\n\n${i + 1}/${total}`
   }
 
+  // clear draft from storage
+  const handleClearDraft = () => {
+    const success = clearDraft()
+    if (success) {
+      updateDraftStatus(false)
+      domUtils.showToast('Draft cleared')
+    }
+  }
+
   // handle text input changes
   const handleTextInput = () => {
     const text = mainText.value.trim()
@@ -480,8 +558,12 @@ const createTwitterThreadComposer = () => {
 
     if (text.length === 0) {
       updateDisplay()
+      clearDraft() // clear draft when editor is empty
       return
     }
+
+    // save draft
+    saveDraft(mainText.value)
 
     const baseParts = splitIntoParts(mainText.value)
     buildTweetsFromParts(baseParts)
@@ -742,6 +824,14 @@ const createTwitterThreadComposer = () => {
     updateDisplay()
     lastText = mainText.value
 
+    // load draft, if present
+    const draftText = loadDraft()
+    if (draftText && draftText.trim()) {
+      mainText.value = draftText
+      handleTextInput()
+      domUtils.showToast('Draft restored')
+    }
+
     // process any text starting in the composer on page load
     if (mainText.value.trim()) {
       handleTextInput()
@@ -753,7 +843,7 @@ const createTwitterThreadComposer = () => {
     init,
     addEmptyTweet,
     autoSplit,
-    clearAll,
+    clearEditor,
     getMaxLength: () => maxLength,
     getTweetCount: () => tweets.length,
     getTweets: () => [...tweets], // return copy to prevent external mutation

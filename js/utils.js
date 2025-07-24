@@ -274,6 +274,33 @@ const createDOMUtils = () => {
     }
   }
 
+  // show toast notification
+  // TODO: default duration constant
+  const showToast = (message, duration = 3000) => {
+    const toast = createElement('div', {
+      className: 'fixed top-4 left-64 bg-blue-900 border border-blue-700 text-white-200 px-4 py-2 rounded-lg shadow-lg text-sm opacity-0 transform -translate-y-2 transition-all duration-300 ease-out z-50 min-w-48',
+    }, message)
+
+    document.body.appendChild(toast);
+
+    // fade in
+    setTimeout(() => {
+      toast.style.opacity = '1'
+      toast.style.transform = 'translateY(0)'
+    }, 10) // TODO: fade in constant
+
+    // fade out and remove
+    setTimeout(() => {
+      toast.style.opacity = '0'
+      toast.style.transform = 'translateY(-10px)'
+      setTimeout(() => {
+        if (toast.parentNode) {
+          document.body.removeChild(toast)
+        }
+      }, 300) // TODO: (toast) fade out constant
+    }, duration)
+  }
+
   // toggle element visibility with animation
   const toggleVisibility = (element, force = null) => {
     if (!isValidElement(element)) return false
@@ -294,16 +321,16 @@ const createDOMUtils = () => {
 
   // public API
   return {
-    copyToClipboard,
-    showTemporaryFeedback,
-    scrollToElement,
-    toggleVisibility,
-    addEventListenerWithCleanup,
     addEventListeners,
+    addEventListenerWithCleanup,
+    copyToClipboard,
     createElement,
     findElements,
-    // utility methods
-    isValidElement
+    isValidElement,
+    scrollToElement,
+    showToast,
+    showTemporaryFeedback,
+    toggleVisibility,
   }
 }
 

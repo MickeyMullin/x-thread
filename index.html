@@ -26,18 +26,23 @@
         </div>
 
         <!-- character counter -->
-        <div class="mb-4 flex justify-between items-center">
-          <div id="charCounter" class="text-sm font-medium text-gray-400">
-            0 characters
+        <div class="mb-4 flex justify-between items-start">
+          <div class="flex flex-col">
+            <div id="charCounter" class="text-sm font-medium text-gray-400">
+              0 characters
+            </div>
+            <div id="draftStatus" class="text-xs text-gray-500 hidden">
+              <!-- draft status will be inserted here -->
+            </div>
           </div>
           <div class="flex gap-2">
             <button id="autoSplit"
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
               Auto Split
             </button>
-            <button id="clearAll"
+            <button id="clearEditor"
               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
-              Clear All
+              Clear Editor
             </button>
           </div>
         </div>
@@ -65,13 +70,23 @@
         <!-- tips -->
         <div class="bg-blue-900 border border-blue-700 rounded-lg p-4">
           <h4 class="font-medium text-blue-200 mb-2">💡 Tips</h4>
-          <ul class="text-sm text-blue-300 space-y-1">
-            <li>• Type <code class="bg-blue-800 px-1 rounded">---</code> on its own line to manually split tweets</li>
-            <li>• Auto Split intelligently breaks at sentence boundaries first</li>
-            <li>• Use Insert --- button to add separators at cursor position</li>
-            <li>• Edit individual tweets directly in the preview</li>
-            <li>• Click copy button to grab individual tweets</li>
+          <ul class="text-sm text-blue-300 space-y-1 list-disc list-inside">
+            <li>Type <code class="bg-blue-800 px-1 rounded">---</code> on its own line to manually split tweets</li>
+            <li>Auto Split intelligently breaks at sentence boundaries first</li>
+            <li>Use Insert --- button to add separators at cursor position</li>
+            <li>Edit individual tweets directly in the preview</li>
+            <li>Click copy button to grab individual tweets</li>
+            <li>Your work auto-saves locally (browser only, ~5MB limit)</li>
+            <li>Drafts persist between sessions until manually cleared</li>
           </ul>
+        </div>
+
+        <div class="mt-4 bg-gray-800 border border-gray-600 rounded-lg p-3">
+          <h4 class="font-medium text-gray-300 mb-2 text-sm">💾 Drafts</h4>
+          <button id="clearDraft"
+            class="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 transition-colors">
+            Clear Draft
+          </button>
         </div>
       </div>
     </div>

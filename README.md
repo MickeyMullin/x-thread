@@ -1,6 +1,11 @@
-# X-Thread
+# X-Thread Composer
 
-Improved X/Twitter composer: Auto-threader always-on character counter, and draft auto-save
+Improved X/Twitter composer with automatic thread splitting, character counter, and draft auto-save
+
+## Live Demo
+
+- **React Version**: [https://mickeymullin.github.io/x-thread/](https://mickeymullin.github.io/x-thread/)
+- **Vanilla JS Version**: [https://mickeymullin.github.io/x-thread/vanillajs/](https://mickeymullin.github.io/x-thread/vanillajs/)
 
 ## Features
 
@@ -12,25 +17,59 @@ Improved X/Twitter composer: Auto-threader always-on character counter, and draf
 - **Real-time preview** with debounced input processing
 - **Smart character counter** with context-aware display
 
-## Draft System
+## Versions
 
-- Auto-saves as you type (300ms debounce)
-- Persists between browser sessions
-- Automatic backup on page unload
-- Browser-only storage (~5MB limit)
-- Smart recovery on app restart
+### React + TypeScript ([/react](/react))
 
-## Usage
+Modern implementation with:
 
-1. Start typing your thread content
-2. Use `---` on its own line to manually split tweets
-3. Enable thread indicators for numbered sequences
-4. Copy on individual tweets, or use "Copy Next" for sequential copying
-5. Your work auto-saves - no need to worry about losing progress
+- React 18 + TypeScript
+- Vite build tooling
+- Tailwind CSS + SCSS
+- Custom hooks and factory pattern utilities
+- Ready for extension and integration
 
-## Manual Controls
+### Vanilla JavaScript ([/vanillajs](/vanillajs))
 
-- **Auto Split**: Process current text into optimal tweet splits (usually happens automatically)
-- **Clear Editor**: Remove all text (session only)
-- **Insert ---**: Add manual separator at cursor
-- **Clear Draft**: Remove saved draft from browser local storage
+Lightweight implementation with:
+
+- Pure JavaScript (ES6+)
+- Factory pattern utilities
+- Tailwind CSS
+- No build process required
+- Easy to embed or customize
+
+## Use Cases
+
+- **Content creators** planning Twitter threads
+- **Marketers** drafting social media campaigns  
+- **Writers** breaking long-form content into tweet sequences
+- **Anyone** who wants to compose threads before posting
+
+## Documentation
+
+- [React Version Documentation](./react/README.md)
+- [Vanilla JS Version Documentation](./vanillajs/README.md)
+
+## 🛠️ Development
+
+Each version has its own development setup:
+
+```bash
+# React version
+cd react
+npm install
+npm run dev
+
+# Vanilla JS version  
+cd vanillajs
+# Open index.html in browser or serve with local server
+```
+
+## License
+
+MIT License - feel free to use this in your own projects
+
+## Contributing
+
+Issues and pull requests welcome. Check the individual version READMEs for specific development guidelines.

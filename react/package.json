@@ -1,6 +1,5 @@
 {
   "name": "x-thread-react",
-  "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -28,5 +27,8 @@
     "tailwindcss": "^3.4.3",
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
-  }
+  },
+  "keywords": ["twitter", "threads", "social-media", "text-processing"],
+  "author": "Mickey Mullin",
+  "license": "MIT"
 }

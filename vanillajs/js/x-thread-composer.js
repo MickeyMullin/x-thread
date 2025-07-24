@@ -1,4 +1,4 @@
-// /js/twitter-thread-composer.js
+// /js/x-thread-composer.js
 
 const createTwitterThreadComposer = () => {
   let tweets = []

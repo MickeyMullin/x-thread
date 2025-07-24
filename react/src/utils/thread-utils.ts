@@ -5,6 +5,7 @@ import { textUtils } from './text-utils'
 import { MAX_TWEET_LENGTH } from './constants'
 
 export const createThreadUtils = () => {
+  // create initial tweet objects from parts
   const createInitialTweets = (baseParts: string[]): Tweet[] => {
     return baseParts.map((part, idx) => ({
       baseText: part,
@@ -15,67 +16,83 @@ export const createThreadUtils = () => {
     }))
   }
 
+  // generate display tweets from base tweets (clean rebuild every time)
   const generateDisplayTweets = (baseTweets: Tweet[], includeIndicators: boolean): Tweet[] => {
     if (!includeIndicators) {
+      // no indicators needed, just copy base tweets and set text
       return baseTweets.map(tweet => ({
         ...tweet,
         text: tweet.baseText
       }))
     }
 
+    // apply indicators and split as needed
     const displayTweets = baseTweets.map(tweet => ({ ...tweet }))
 
-    let i = 0
-    while (i < displayTweets.length) {
+    let changed
+    do {
+      changed = false
       const total = displayTweets.length
-      const indicator = getIndicator(i, total)
-      const fullLen = displayTweets[i].baseText.length + indicator.length
+      for (let i = 0; i < total; ++i) {
+        const indicator = getIndicator(i, total)
+        const fullLen = displayTweets[i].baseText.length + indicator.length
 
-      if (fullLen > MAX_TWEET_LENGTH) {
-        if (i === total - 1) {
-          displayTweets[i].omitIndicator = true
-          i++
-        } else {
-          const indicatorLen = indicator.length
-          const splitPoint = textUtils.findOptimalSplitPoint(
-            displayTweets[i].baseText,
-            MAX_TWEET_LENGTH - indicatorLen
-          )
-
-          if (splitPoint > 0) {
-            const part1 = displayTweets[i].baseText.substring(0, splitPoint).trim()
-            const part2 = displayTweets[i].baseText.substring(splitPoint).trim()
-
-            displayTweets[i].baseText = part1
-
-            const newTweet: Tweet = {
-              baseText: part2,
-              id: Date.now() + Math.random(),
-              copied: false,
-              omitIndicator: false,
-              text: part2,
-            }
-
-            displayTweets.splice(i + 1, 0, newTweet)
-          } else {
+        if (fullLen > MAX_TWEET_LENGTH) {
+          // need to split this tweet
+          if (i === total - 1) {
+            // last tweet, omit indicator instead of splitting
             displayTweets[i].omitIndicator = true
-            i++
+          } else {
+            const indicatorLen = indicator.length
+            const splitPoint = textUtils.findOptimalSplitPoint(
+              displayTweets[i].baseText,
+              MAX_TWEET_LENGTH - indicatorLen
+            )
+
+            if (splitPoint > 0 && splitPoint < displayTweets[i].baseText.length) {
+              const part1 = displayTweets[i].baseText.substring(0, splitPoint).trim()
+              const part2 = displayTweets[i].baseText.substring(splitPoint).trim()
+
+              // only split if part2 is non-empty and substantial (i.e., > 5 chars)
+              if (part2.length > 5) {
+                displayTweets[i].baseText = part1
+
+                const newTweet = {
+                  baseText: part2,
+                  id: Date.now() + Math.random(), // ensure unique ID
+                  copied: false,
+                  omitIndicator: false,
+                  text: part2,
+                }
+
+                displayTweets.splice(i + 1, 0, newTweet)
+                changed = true
+                break // restart loop to recalculate indicators with new total
+              } else {
+                // part2 too short; omit indicator
+                displayTweets[i].omitIndicator = true
+              }
+            } else {
+              // can't split meaningfully; omit indicator
+              displayTweets[i].omitIndicator = true
+            }
           }
         }
-      } else {
-        i++
       }
-    }
+    } while (changed)
 
+    // now set final text with indicators
     const finalTotal = displayTweets.length
     displayTweets.forEach((tweet, index) => {
       const indicator = getIndicator(index, finalTotal, tweet.omitIndicator)
+
       tweet.text = tweet.baseText + indicator
     })
 
     return displayTweets
   }
 
+  // compute thread indicator for tweet position
   const getIndicator = (index: number, total: number, omit: boolean = false): string => {
     if (omit) return ''
     if (index === 0) return '\n\n🧵'
@@ -87,6 +104,7 @@ export const createThreadUtils = () => {
     return tweets.findIndex(tweet => !tweet.copied)
   }
 
+  // split text into tweet parts (strings only, no objects)
   const splitIntoParts = (text: string): string[] => {
     const parts: string[] = []
     const manualSections = textUtils.parseManualSeparators(text)

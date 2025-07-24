@@ -4,16 +4,19 @@ import { TextStats } from '@/types'
 import { MANUAL_SEPARATOR } from './constants'
 
 export const createTextUtils = () => {
+  // count sentences in text
   const countSentences = (text: string): number => {
     if (!isValidText(text)) return 0
     return text.split(/[.!?]+/).filter(s => s.trim().length > 0).length
   }
 
+  // count words in text
   const countWords = (text: string): number => {
     if (!isValidText(text)) return 0
     return normalizeWhitespace(text).split(' ').length
   }
 
+  // escape HTML for safe display
   const escapeHtml = (text: string): string => {
     if (!isValidText(text)) return ''
     const div = document.createElement('div')
@@ -21,6 +24,7 @@ export const createTextUtils = () => {
     return div.innerHTML
   }
 
+  // smart text splitting with various strategies
   const findOptimalSplitPoint = (text: string, maxLength: number): number => {
     if (text.length <= maxLength) return text.length
 
@@ -56,11 +60,13 @@ export const createTextUtils = () => {
     return maxLength
   }
 
+  // convert newlines to br tags
   const formatTextForDisplay = (text: string): string => {
     if (!isValidText(text)) return ''
     return escapeHtml(text).replace(/\n/g, '<br>')
   }
 
+  // generate text statistics
   const getTextStats = (text: string): TextStats => {
     return {
       characters: text.length,
@@ -74,10 +80,12 @@ export const createTextUtils = () => {
     return typeof text === 'string' && text.length > 0
   }
 
+  // helper for normalizing whitespace
   const normalizeWhitespace = (text: string): string => {
     return text.replace(/\s+/g, ' ').trim()
   }
 
+  // parse manual separators (---)
   const parseManualSeparators = (text: string): string[] => {
     if (!isValidText(text)) return [text || '']
 
@@ -103,6 +111,7 @@ export const createTextUtils = () => {
     return sections.length > 0 ? sections : [text]
   }
 
+  // truncate text with ellipsis
   const truncateText = (text: string, maxLength: number, ellipsis: string = '...'): string => {
     if (!isValidText(text) || text.length <= maxLength) return text
 

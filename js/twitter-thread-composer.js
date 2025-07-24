@@ -94,47 +94,53 @@ const createTwitterThreadComposer = () => {
     // apply indicators and split as needed
     const displayTweets = baseTweets.map(tweet => ({ ...tweet }))
 
-    let i = 0
-    while (i < displayTweets.length) {
+    let changed
+    do {
+      changed = false
       const total = displayTweets.length
-      const indicator = getIndicator(i, total)
-      const fullLen = displayTweets[i].baseText.length + indicator.length
+      for (let i = 0; i < total; i++) {
+        const indicator = getIndicator(i, total)
+        const fullLen = displayTweets[i].baseText.length + indicator.length
 
-      if (fullLen > maxLength) {
-        // need to split this tweet
-        if (i === total - 1) {
-          // last tweet, omit indicator instead of splitting
-          displayTweets[i].omitIndicator = true
-          i++
-        } else {
-          const indicatorLen = indicator.length
-          const splitPoint = textUtils.findOptimalSplitPoint(displayTweets[i].baseText, maxLength - indicatorLen)
-
-          if (splitPoint > 0) {
-            const part1 = displayTweets[i].baseText.substring(0, splitPoint).trim()
-            const part2 = displayTweets[i].baseText.substring(splitPoint).trim()
-
-            displayTweets[i].baseText = part1
-
-            const newTweet = {
-              baseText: part2,
-              id: Date.now() + Math.random(), // ensure unique ID
-              copied: false,
-              omitIndicator: false
-            }
-
-            displayTweets.splice(i + 1, 0, newTweet)
-            // don't increment i, recheck current tweet with new total
-          } else {
-            // can't split meaningfully, omit indicator
+        if (fullLen > maxLength) {
+          // need to split this tweet
+          if (i === total - 1) {
+            // last tweet, omit indicator instead of splitting
             displayTweets[i].omitIndicator = true
-            i++
+          } else {
+            const indicatorLen = indicator.length
+            const splitPoint = textUtils.findOptimalSplitPoint(displayTweets[i].baseText, maxLength - indicatorLen)
+
+            if (splitPoint > 0 && splitPoint < displayTweets[i].baseText.length) {
+              const part1 = displayTweets[i].baseText.substring(0, splitPoint).trim()
+              const part2 = displayTweets[i].baseText.substring(splitPoint).trim()
+
+              // only split if part2 is non-empty and substantial (e.g., > 5 chars)
+              if (part2.length > 5) {
+                displayTweets[i].baseText = part1
+
+                const newTweet = {
+                  baseText: part2,
+                  id: Date.now() + Math.random(), // ensure unique ID
+                  copied: false,
+                  omitIndicator: false
+                }
+
+                displayTweets.splice(i + 1, 0, newTweet)
+                changed = true
+                break // restart loop to recalculate indicators with new total
+              } else {
+                // part2 too short; omit indicator
+                displayTweets[i].omitIndicator = true
+              }
+            } else {
+              // can't split meaningfully; omit indicator
+              displayTweets[i].omitIndicator = true
+            }
           }
         }
-      } else {
-        i++
       }
-    }
+    } while (changed)
 
     // now set final text with indicators
     const finalTotal = displayTweets.length
@@ -491,8 +497,8 @@ const createTwitterThreadComposer = () => {
   const initializeElements = () => {
     // check if utilities available
     if (!window.textUtils || !window.domUtils || !window.animationUtils) {
-        console.error('Utilities not loaded! Ensure utils.js loaded before twitter-thread-composer.js')
-        return false
+      console.error('Utilities not loaded! Ensure utils.js loaded before twitter-thread-composer.js')
+      return false
     }
 
     // explicit utility references

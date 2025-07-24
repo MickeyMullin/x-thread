@@ -33,6 +33,7 @@ export const createDOMUtils = () => {
    * Public Functions *
    ********************/
 
+  // copy text to clipboard with fallback
   const copyToClipboard = async (text: string): Promise<boolean> => {
     if (!text) return false
 
@@ -41,6 +42,7 @@ export const createDOMUtils = () => {
         await navigator.clipboard.writeText(text)
         return true
       } else {
+        // fallback for older browsers
         return fallbackCopyToClipboard(text)
       }
     } catch (error) {
@@ -53,6 +55,7 @@ export const createDOMUtils = () => {
     return element !== null && element.nodeType === Node.ELEMENT_NODE
   }
 
+  // helper to restore element to original state
   const restoreElementState = (
     element: Element | null,
     originalState: { text: string; className: string; width: number }
@@ -65,6 +68,7 @@ export const createDOMUtils = () => {
     el.style.width = ''
   }
 
+  // smooth scroll to element
   const scrollToElement = (element: Element | null, options: ScrollOptions = {}): boolean => {
     if (!isValidElement(element)) return false
 
@@ -78,6 +82,7 @@ export const createDOMUtils = () => {
     return true
   }
 
+  // show temporary feedback on element with cancellation support
   const showTemporaryFeedback = (
     element: Element | null,
     message: string,
@@ -97,6 +102,7 @@ export const createDOMUtils = () => {
     el.textContent = message
     el.className = 'copy-btn text-green-400 font-medium text-sm min-w-[3rem]'
 
+    // return object w/ timeout ID and revert callback
     const timeoutId = setTimeout(() => {
       restoreElementState(element, originalState)
     }, duration)

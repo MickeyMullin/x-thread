@@ -22,7 +22,7 @@ interface UseDraftReturn {
 export const useDraft = (): UseDraftReturn => {
   const [draftState, setDraftState] = useState<DraftState>({
     hasDraft: false,
-    lastSaved: null
+    lastSaved: null,
   })
 
   const autoSaveTimeoutRef = useRef<number>()

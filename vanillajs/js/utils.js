@@ -374,6 +374,7 @@ const createTextUtils = () => {
     }
 
     // strategy 2: paragraph breaks
+    // for edge cases where code or bullets don't terminate in a period
     const paragraphBreak = text.lastIndexOf('\n\n', maxLength)
     if (paragraphBreak > maxLength * 0.5) {
       return paragraphBreak + 2

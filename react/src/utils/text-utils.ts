@@ -24,7 +24,7 @@ export const createTextUtils = () => {
     return div.innerHTML
   }
 
-  // smart text splitting with various strategies
+  // text splitting with various strategies
   const findOptimalSplitPoint = (text: string, maxLength: number): number => {
     if (text.length <= maxLength) return text.length
 
@@ -39,6 +39,7 @@ export const createTextUtils = () => {
     }
 
     // strategy 2: paragraph breaks
+    // for edge cases where code or bullets don't terminate in a period
     const paragraphBreak = text.lastIndexOf('\n\n', maxLength)
     if (paragraphBreak > maxLength * 0.5) {
       return paragraphBreak + 2
